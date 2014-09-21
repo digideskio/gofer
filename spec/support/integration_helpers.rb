@@ -1,57 +1,29 @@
+require "fileutils"
+require "tmpdir"
+
 module IntegrationHelpers
-
-  def test_hostname
-    ENV['TEST_HOST'] || 'localhost'
+  def create_tmpfile(file, val = nil)
+    file = FileUtils.touch(@tmpdir.join(file)).first
+    File.write(file, val) if val
+    file
   end
 
-  def test_username
-    ENV['TEST_USER'] || ENV['USER']
-  end
-
-  def test_identity_file
-    ENV['TEST_IDENTITY_FILE'] || '~/.ssh/id_rsa'
-  end
-
-  def raw_ssh command
-    out = `ssh -o PasswordAuthentication=no -ni #{test_identity_file} #{test_username}@#{test_hostname} #{command}`
-    raise "Command #{command} failed" unless $? == 0
-    out
-  end
-
-  def make_tmpdir
-    @tmpdir = raw_ssh("mktemp -d /tmp/gofertest.XXXXX").chomp
-  end
-
-  def clean_tmpdir
-    if ENV['KEEPTMPDIR']
-      puts "TMPDIR is #{@tmpdir}"
-    else
-      raw_ssh "rm -rf #{@tmpdir}" if @tmpdir && @tmpdir =~ %r{gofertest}
-    end
-  end
-
-  def in_tmpdir path
-    File.join(@tmpdir, path)
-  end
-
-  def with_local_tmpdir template
-    f = Tempfile.new template
-    path = f.path
-    f.close
-    f.unlink
-    FileUtils.mkdir path
-    begin
-      yield path
-    ensure
-      FileUtils.rm_rf path unless ENV['KEEPTMPDIR']
-    end
+  def with_tmp(&block)
+    @tmpdir = Pathname.new(Dir.mktmpdir("gofertest"))
+    yield
+  ensure
+    @tmpdir = FileUtils.remove_entry_secure @tmpdir, \
+      force: true, recursive: true
   end
 
   def with_captured_output
-    @stdout = ''
-    @stderr = ''
-    @combined = ''
-    $stdout.stub!( :write ) { |*args| @stdout.<<( *args ); @combined.<<( *args )}
-    $stderr.stub!( :write ) { |*args| @stderr.<<( *args ); @combined.<<( *args )}
+    @stdout, @stderr, @combined = "", "", ""
+    allow($stdout).to receive(:write) { |*a| @stdout.<<(*a); @combined.<<(*a) }
+    allow($stderr).to receive(:write) { |*a| @stderr.<<(*a); @combined.<<(*a) }
+    yield
+  ensure
+    [:@stdout, :@stderr, :@combined].each do |v|
+      remove_instance_variable v
+    end
   end
 end

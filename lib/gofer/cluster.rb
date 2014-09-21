@@ -1,6 +1,8 @@
-require 'thread'
+require "thread"
 
 module Gofer
+
+  # ---------------------------------------------------------------------------
   # A collection of Gofer::Host instances that can run commands simultaneously
   #
   # Gofer::Cluster supports most of the methods of Gofer::Host. Commands
@@ -9,102 +11,84 @@ module Gofer
   # will receive commands at the same time.
   #
   # Results from commands run are returned in a Hash, keyed by host.
+  # ---------------------------------------------------------------------------
+
   class Cluster
-
-    # Hosts in this cluster
-    attr_reader :hosts
-
-    # Maximum number of commands to run simultaneously
     attr_accessor :max_concurrency
+    attr_reader   :hosts
 
+    # -------------------------------------------------------------------------
     # Create a new cluster of Gofer::Host connections.
     #
-    # +parties+:: Gofer::Host or other Gofer::Cluster instances
-    #
-    # Options:
-    #
-    # +max_concurrency+:: Maximum number of commands to run simultaneously
-    def initialize(parties=[], opts={})
-      @hosts = []
-      @max_concurrency = opts.delete(:max_concurrency)
+    # @param parties [Array] Gofer::Host or other Gofer::Cluster instances
+    # @opt opts max_concurrency [String] Maximum number of commands to async.
+    # -------------------------------------------------------------------------
 
-      parties.each { |i| self << i }
+    def initialize(parties=[], opts={})
+      @hosts, @max_concurrency = [], opts.delete(:max_concurrency)
+      parties.each do |i|
+        self << i
+      end
     end
 
+    # -------------------------------------------------------------------------
     # Currency effective concurrency, either +max_concurrency+ or the number of
     # Gofer::Host instances we contain.
+    # -------------------------------------------------------------------------
+
     def concurrency
       max_concurrency.nil? ? hosts.length : [max_concurrency, hosts.length].min
     end
 
+    # -------------------------------------------------------------------------
     # Add a Gofer::Host or the hosts belonging to a Gofer::Cluster to this instance.
+    # -------------------------------------------------------------------------
+
     def <<(other)
       case other
-      when Cluster
-        other.hosts.each { |host| self << host }
-      when Host
-        @hosts << other
+        when Host then @hosts << other
+        when Cluster then other.hosts.each do |h|
+          self << h
+        end
       end
     end
 
-    # Run a command on this Gofer::Cluster. See Gofer::Host#run
-    def run *args
-      threaded(:run, *args)
+    # -------------------------------------------------------------------------
+
+    [:run, :exist?, :directory?, :ls, :upload, :read, :write].each do |k|
+      define_method k do |*a|
+        threaded(k, *a)
+      end
     end
 
-    # Check if a path exists on each host in the cluster. See Gofer::Host#exist?
-    def exist? *args
-      threaded(:exist?, *args)
-    end
-
-    # Check if a path is a directory on each host in the cluster. See Gofer::Host#directory?
-    def directory? *args
-      threaded(:directory?, *args)
-    end
-
-    # List a directory on each host in the cluster. See Gofer::Host#ls
-    def ls *args
-      threaded(:ls, *args)
-    end
-
-    # Upload to each host in the cluster. See Gofer::Host#ls
-    def upload *args
-      threaded(:upload, *args)
-    end
-
-    # Read a file on each host in the cluster. See Gofer::Host#read
-    def read *args
-      threaded(:read, *args)
-    end
-
-    # Write a file to each host in the cluster. See Gofer::Host#write
-    def write *args
-      threaded(:write, *args)
-    end
-
-    private
-
+    # -------------------------------------------------------------------------
     # Spawn +concurrency+ worker threads, each of which pops work off the
     # +_in+ queue, and writes values to the +_out+ queue for syncronisation.
+    # -------------------------------------------------------------------------
+
+    private
     def threaded(meth, *args)
-      _in = run_queue
+      results_semaphore, errors_semaphore = Mutex.new, Mutex.new
+      _in, _out = run_queue, Queue.new
+      results, errors = {}, {}
       length = _in.length
-      _out = Queue.new
-      results = {}
-      errors = {}
-      results_semaphore = Mutex.new
-      errors_semaphore = Mutex.new
+
       concurrency.times do
         Thread.new do
           loop do
             host = _in.pop(false) rescue Thread.exit
 
             begin
-              result = host.send(meth, *args)
-              results_semaphore.synchronize { results[host] = result }
+              result =  host.send(meth, *args)
+              results_semaphore.synchronize do
+                results[host] = result
+              end
             rescue Exception => e
-              errors_semaphore.synchronize { errors[host] = e }
+              errors_semaphore.synchronize do
+                errors[host] = e
+              end
             end
+
             _out << true
           end
         end
@@ -114,12 +98,11 @@ module Gofer
         _out.pop
       end
 
-      if errors.size > 0
-        raise Gofer::ClusterError.new(errors)
-      else
-        results
-      end
+      # Give it to them because they need it nao.
+      errors.size > 0 ? raise(Gofer::ClusterError.new(errors)) : results
     end
+
+    # -------------------------------------------------------------------------
 
     def run_queue
       Queue.new.tap do |q|

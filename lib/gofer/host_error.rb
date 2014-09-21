@@ -1,17 +1,15 @@
 module Gofer
-  # An error encountered performing a Gofer command
+
+  # ---------------------------------------------------------------------------
+  # An error encountered performing a Gofer command.
+  # ---------------------------------------------------------------------------
+
   class HostError < Exception
+    attr_reader :response, :host
 
-    # Instance of Gofer::Host that raised the error
-    attr_reader :host
-
-    # Instance of Gofer::Response encapsulating the error output
-    attr_reader :response
-
-    def initialize host, response, message
-      @host = host
-      @response = response
-      super "#{host.hostname}: #{message}"
+    def initialize(host, response, message)
+      @host, @response = host, response
+      super("#{host.hostname}: #{message}")
     end
   end
 end

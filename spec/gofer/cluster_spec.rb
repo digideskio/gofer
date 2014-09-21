@@ -3,40 +3,39 @@ require 'spec_helper'
 describe Gofer::Cluster do
 
   before :all do
-    @cluster = Gofer::Cluster.new
-    # Cheat and use the same host repeatedly
-    @host1 = Gofer::Host.new(test_hostname, test_username, :keys => [test_identity_file], :quiet => true)
-    @host2 = Gofer::Host.new(test_hostname, test_username, :keys => [test_identity_file], :quiet => true)
-    @cluster << @host1
-    @cluster << @host2
-    make_tmpdir
+    @host1 = Gofer::Host.new("127.0.0.1", ENV["USER"], quiet: true)
+    @host2 = Gofer::Host.new("127.0.0.2", ENV["USER"], quiet: true)
+    [@host1, @host2].each do |v|
+      (@cluster ||= Gofer::Cluster.new) << v
+    end
   end
 
-  after(:all) { clean_tmpdir }
-
-  it "should run commands in parallel" do
-    results = @cluster.run("bash -l -c \"ruby -e 'puts Time.now.to_f; sleep 0.1; puts Time.now.to_f'\"")
-
+  specify "run commands async" do
+    results = @cluster.run("bash -l -c \"ruby -e 'puts Time.now.to_i; sleep 1; puts Time.now.to_i'\"")
     res1 = results[@host1].stdout.lines.to_a
     res2 = results[@host2].stdout.lines.to_a
-
-    expect(res1[1].to_f).to be > res2[0].to_f
+    expect(res1[0]).to eq res2[0]
+    expect(res1[1]).to eq res2[1]
   end
 
-  it "should respect max_concurrency" do
-    @cluster.max_concurrency = 1
-    results = @cluster.run("bash -l -c \"ruby -e 'puts Time.now.to_f; sleep 0.1; puts Time.now.to_f'\"")
+  context do
+    before(:all) { @cluster.max_concurrency = 1   }
+    after (:all) { @cluster.max_concurrency = nil }
 
-    res1 = results[@host1].stdout.lines.to_a
-    res2 = results[@host2].stdout.lines.to_a
+    specify "respect max_concurrency" do
+      results = @cluster.run("bash -l -c \"ruby -e 'puts Time.now.to_i; sleep 1; puts Time.now.to_i'\"")
+      res1 = results[@host1].stdout.lines.to_a
+      res2 = results[@host2].stdout.lines.to_a
 
-    expect(res2[0].to_f).to be >= res1[1].to_f
+      expect(res1[0].to_i + 1).to eq res2[0].to_i
+      expect(res1[1].to_i + 1).to eq res2[1].to_i
+    end
   end
 
   it "should encapsulate errors in a Gofer::ClusterError container exception" do
     expect { @cluster.run("false") }.to raise_error(Gofer::ClusterError)
-    begin
-      @cluster.run "false"
+
+    begin; @cluster.run "false"
     rescue Gofer::ClusterError => e
       expect(e.errors.keys.length).to eq(2)
       expect(e.errors[@host1]).to be_a(Gofer::HostError)
@@ -44,56 +43,103 @@ describe Gofer::Cluster do
     end
   end
 
-  # TODO: Make this a custom matcher?
   def results_should_eq expected, &block
     results = block.call
-    results[@host1].should eq expected
-    results[@host2].should eq expected
+    expect(results[@host1]).to eq expected
+    expect(results[@host2]).to eq expected
   end
 
   describe :exist? do
-    it "should return true if a directory exists" do
-      results_should_eq(true) { @cluster.exist?(@tmpdir) }
-      results_should_eq(false) { @cluster.exist?(@tmpdir + '/blargh') }
+    specify "return true if exists" do
+      with_tmp do
+        results_should_eq(true)  { @cluster.exist?(@tmpdir) }
+      end
+    end
+
+    specify "return false if ! exist" do
+      with_tmp do
+        results_should_eq(false) { @cluster.exist?(@tmpdir + '/blargh') }
+      end
     end
   end
 
   describe :directory? do
-    it "should return true if a path is a directory" do
-      results_should_eq(true) { @cluster.directory?(@tmpdir)}
-      raw_ssh "touch #{@tmpdir}/a_file"
-      results_should_eq(false) { @cluster.directory?("#{@tmpdir}/a_file")}
+    specify "return true if directory" do
+      with_tmp do
+        results_should_eq(true) { @cluster.directory?(@tmpdir) }
+      end
+    end
+
+    specify "return false if directory" do
+      with_tmp do
+        results_should_eq(false) { @cluster.directory?(create_tmpfile("hello")) }
+      end
     end
   end
 
   describe :read do
-    it "should read in the contents of a file" do
-      raw_ssh "echo hello > #{@tmpdir}/hello.txt"
-      results_should_eq("hello\n") { @cluster.read(@tmpdir + '/hello.txt')}
+    specify "read the contents" do
+      with_tmp do
+        results_should_eq("world") { @cluster.read(create_tmpfile("hello", "world")) }
+      end
     end
   end
 
   describe :ls do
-    it "should list the contents of a directory" do
-      raw_ssh "mkdir #{@tmpdir}/lstmp && touch #{@tmpdir}/lstmp/f"
-      results_should_eq(['f']) { @cluster.ls(@tmpdir + '/lstmp') }
+    it "lists the contents of a directory" do
+      with_tmp do
+        results_should_eq(["lstmp"]) do
+          @cluster.ls(File.dirname(create_tmpfile("lstmp")))
+        end
+      end
     end
   end
 
   describe :upload do
-    it "should upload a file to the remote server" do
-      pending "testing problematic as we're connecting to the same host twice"
+    specify "upload the damn file" do
+      with_tmp do
+        meth0 = @cluster.hosts[0].method(:upload)
+        meth1 = @cluster.hosts[1].method(:upload)
+
+        client_file0 = create_tmpfile("hello0", "hello0")
+        client_file1 = create_tmpfile("hello1", "hello1")
+        server_file0 = @tmpdir.join("world0")
+        server_file1 = @tmpdir.join("world1")
+
+        allow(@cluster.hosts[0]).to receive(:upload) { |_, _| meth0.call(client_file0, server_file0) }
+        allow(@cluster.hosts[1]).to receive(:upload) { |_, _| meth1.call(client_file1, server_file1) }
+        @cluster.upload
+
+        expect(server_file0.file?).to eq true
+        expect(server_file1.file?).to eq true
+        expect(server_file0.read.strip).to eq "hello0"
+        expect(server_file1.read.strip).to eq "hello1"
+      end
     end
   end
 
   describe :write do
-    it "should write a file to the remote server" do
-      pending "testing problematic as we're connecting to the same host twice"
+    specify "write the damn file" do
+      with_tmp do
+        meth0 = @cluster.hosts[0].method(:write)
+        meth1 = @cluster.hosts[1].method(:write)
+        file0 = @tmpdir.join("hello0")
+        file1 = @tmpdir.join("hello1")
+
+        allow(@cluster.hosts[0]).to receive(:write) { |text, _| meth0.call(text, file0) }
+        allow(@cluster.hosts[1]).to receive(:write) { |text, _| meth1.call(text, file1) }
+
+        @cluster.write("world", nil)
+        expect(file0.file?).to eq true
+        expect(file1.file?).to eq true
+        expect(file0.read ).to eq "world"
+        expect(file1.read ).to eq "world"
+      end
     end
   end
 
   describe :download do
-    it "should deliberately not be implemented as destination files would be overwritten" do
+    specify "should not be implemented" do
       expect { @cluster.download("whut") }.to raise_error(NoMethodError)
     end
   end

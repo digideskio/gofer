@@ -1,194 +1,185 @@
-require 'spec_helper'
-require 'tempfile'
+require "spec_helper"
+require "tempfile"
 
 describe Gofer::Host do
-
   before :all do
-    @host = Gofer::Host.new(test_hostname, test_username, :keys => [test_identity_file], :quiet => true)
-    @tmpdir = raw_ssh("mktemp -d /tmp/gofertest.XXXXX").chomp
-    make_tmpdir
+    @host = Gofer::Host.new("127.0.0.1", ENV["USER"], :quiet => true)
   end
 
-  after(:all) { clean_tmpdir }
-
-  describe :new do
-    before(:each) { Gofer::Host.any_instance.stub(:warn => nil) }
-    it "should support the legacy positional argument" do
-      Gofer::Host.new(test_hostname, test_username, test_identity_file).run("echo hello", :quiet => true).should == "hello\n"
-    end
-
-    it "should support the legacy identity_file key" do
-      Gofer::Host.new(test_hostname, test_username, :identity_file => test_identity_file).run("echo hello", :quiet => true).should == "hello\n"
-    end
-  end
-
-  describe :hostname do
-    it "should be the hostname of the host we're connecting to" do
-      @host.hostname.should == test_hostname
-    end
-  end
-
-  shared_examples_for "an output capturer" do
-    it "and capture stdout in @response.stdout" do
-      @response.stdout.should == "stdout\n"
-    end
-
-    it "and capture stderr in @response.stderr" do
-      @response.stderr.should == "stderr\n"
-    end
-
-    it "and combine captured stdout / stderr in @response.output" do
-      @response.output.should == "stdout\nstderr\n"
-    end
-
-    it "and @response by itself should be the captured stdout" do
-      @response.should == "stdout\n"
-    end
+  specify "#hostname == connected hostname" do
+    expect(@host.hostname).to eq "127.0.0.1"
   end
 
   describe :run do
-
-    describe "with a stdout and stderr responses" do
+    describe "with stdout and stderr responses" do
       before :all do
-        @response = @host.run "echo stdout; echo stderr 1>&2", :quiet_stderr => true
+        @response = @host.run("echo stdout; echo stderr 1>&2", {
+          :quiet_stderr => true
+        })
       end
 
-      it_should_behave_like "an output capturer"
+      it("captures stderr") { expect(@response.stderr.strip).to eq "stderr" }
+      specify("have a combination output")  {  expect(@response.output.strip).to eq "stdout\nstderr" }
+      specify("behave like a string and default to stdout") { expect(@response.strip).to eq "stdout" }
+      it("captures stdout") { expect(@response.stdout.strip).to eq "stdout" }
     end
 
-
-    it "should print stdout responses if quiet is false" do
-      $stdout.should_receive(:write).with "stdout\n"
+    it "prints responses unless quiet is true" do
+      expect($stdout).to receive(:write).with "stdout\n"
       @host.run "echo stdout", :quiet => false
     end
 
-    it "should print stderr responses if quiet_stderr is false" do
-      $stderr.should_receive(:write).with "stderr\n"
+    it "prints stderr responses unless quiet_stderr is true" do
+      expect($stderr).to receive(:write).with "stderr\n"
       @host.run "echo stderr 1>&2", :quiet_stderr => false
     end
 
     context "with a host output prefix" do
-      before do
-        @host.output_prefix = "derp"
-        with_captured_output
-      end
-      it "should prefix each line of the stdout and stderr responses with the output prefix" do
-        @host.run "echo stdout; echo stdout2; echo stderr 1>&2; echo stderr2 1>&2", :quiet => false, :quiet_stderr => false
-        @stdout.should eq "derp: stdout\nderp: stdout2\n"
-        @stderr.should eq "derp: stderr\nderp: stderr2\n"
+      before(:all) { @host.output_prefix = "derp" }
+      after (:all) { @host.output_prefix = nil    }
+
+      specify "prefix first line of stdout and stderr" do
+        with_captured_output do
+          @host.run "echo stdout; echo stdout2; echo stderr 1>&2; echo stderr2 1>&2", {
+            :quiet => false, :quiet_stderr => false
+          }
+
+          expect(@stdout.strip).to eq "derp: stdout\nderp: stdout2"
+          expect(@stderr.strip).to eq "derp: stderr\nderp: stderr2"
+        end
       end
 
-      it "should not prefix if the output is not actually on a new line" do
-        @host.run "echo -n foo; echo bar; echo baz; ", :quiet => false
-        @combined.should eq "derp: foobar\nderp: baz\n"
+      specify "don't prefix continued output on new lines" do
+        with_captured_output do
+          @host.run "echo -n foo; echo bar; echo baz; ", :quiet => false
+          expect(@combined.strip).to eq "derp: foobar\nderp: baz"
+        end
       end
+    end
 
-      it "should process stdin when stdin is set" do
+    specify "process stdin when stdin is set" do
+      with_captured_output do
         @host.run "sed 's/foo/baz/'", :stdin => "foobar", :quiet => false
-        @stdout.should eq "derp: bazbar\n"
+        expect(@stdout.strip).to eq "bazbar"
       end
     end
 
-    it "should error if a command returns a non-zero response" do
-      lambda {@host.run "false"}.should raise_error(/failed with exit status/)
-      begin
-        @host.run "false"
-      rescue Gofer::HostError => e
-        e.response.should be_a Gofer::Response
-        e.host.should be_a Gofer::Host
+    specify "raise if command returns a non-zero" do
+      begin  @host.run "false"; rescue Gofer::HostError => e
+        expect(e).to be_kind_of Gofer::HostError
+        expect(e.host).to be_kind_of Gofer::Host
+        expect(e.message).to match(/failed with exit status/)
       end
     end
 
-    it "should capture a non-zero exit status if asked" do
-      response = @host.run "false", :capture_exit_status => true
-      response.exit_status.should == 1
+    specify "capture a non-zero exit status if told" do
+      response = @host.run("false", :capture_exit_status => true)
+      expect(response.exit_status).to eq 1
     end
   end
 
   describe :exist? do
-    it "should return true if a path or file exists" do
-      raw_ssh "touch #{in_tmpdir 'exists'}"
-      @host.exist?(in_tmpdir 'exists').should be true
+    specify "return true if path exists" do
+      with_tmp do
+        expect(@host.exist?(create_tmpfile("exists"))).to eq true
+      end
     end
 
-    it "should return false if a path does not exist" do
-      @host.exist?(in_tmpdir 'doesnotexist').should be false
+    specify "return false if path doesn't exist" do
+      expect(@host.exist?(File.join("/tmp", SecureRandom.hex))).to eq false
     end
   end
 
   describe :directory? do
-    it "should return true if a path is a directory" do
-      @host.directory?(@tmpdir).should be true
+    specify "return true if dir exists" do
+      with_tmp do
+        expect(@host.directory?(@tmpdir)).to eq true
+      end
     end
 
-    it "should return false if a path is not a directory" do
-      raw_ssh "touch #{in_tmpdir 'a_file'}"
-      @host.directory?(in_tmpdir('a_file')).should be false
+    specify "return false if dir doesn't exist" do
+      with_tmp do
+        expect(@host.directory?(create_tmpfile("exists"))).to eq false
+      end
     end
   end
 
   describe :read do
-    it "should read in the contents of a file" do
-      raw_ssh "echo 'hello' > #{@tmpdir}/hello.txt"
-      @host.read(@tmpdir + '/hello.txt').should == "hello\n"
+    it "reads the contents of a file" do
+      with_tmp do
+        expect(@host.read(create_tmpfile("hello", "hello\nworld")).strip).to eq "hello\nworld"
+      end
     end
   end
 
   describe :ls do
-    it "should list the contents of a directory" do
-      raw_ssh "mkdir #{@tmpdir}/lstmp && touch #{@tmpdir}/lstmp/f"
-      @host.ls(@tmpdir + '/lstmp').should == ['f']
-    end
-  end
-
-  describe :upload do
-    it "should upload a file to the remote server" do
-      f = Tempfile.new('upload_tmp')
-      begin
-        f.write('uploadtmp')
-        f.close
-        @host.upload(f.path, in_tmpdir('uploaded'))
-        raw_ssh("cat #{in_tmpdir 'uploaded'}").should == 'uploadtmp'
-      ensure
-        f.unlink
-      end
-    end
-    it "should upload a directory to the remote server" do
-      f = with_local_tmpdir('upload_dir_tmp') do |path|
-        system "echo 'hey' >> #{File.join(path, 'temp')}"
-        @host.upload(path, in_tmpdir('uploaded_dir'))
-        raw_ssh("cat #{in_tmpdir 'uploaded_dir/temp'}").should == "hey\n"
+    it "lists the contents of a dir" do
+      with_tmp do
+        expect(@host.ls(File.dirname(create_tmpfile("lstmp")))).to eq ["lstmp"]
       end
     end
   end
 
-  describe :write do
-    it "should write a file to the remote server" do
-      @host.write("some data\n", in_tmpdir('written'))
-      raw_ssh("cat #{in_tmpdir 'written'}").should == "some data\n"
-    end
-  end
-
-  describe :download do
-    it "should download a file from the remove server" do
-      f = Tempfile.new('download_dir')
-      begin
-        f.close
-        raw_ssh "echo 'download' > #{in_tmpdir 'download'}"
-        @host.download(in_tmpdir('download'), f.path)
-        File.open(f.path).read.should == "download\n"
-      ensure
-        f.unlink
+  describe :uploads do
+    specify "files" do
+      with_tmp do
+        client_file = create_tmpfile("hello", "hello")
+        server_file = @tmpdir.join("world")
+        @host.upload(client_file, server_file)
+        expect(server_file.file?).to eq true
+        expect(server_file.read.strip).to eq "hello"
       end
     end
 
-    it "should download a directory from the remote server" do
-      with_local_tmpdir 'download_dir' do |path|
-        download_dir = in_tmpdir 'download_dir'
-        raw_ssh "mkdir #{download_dir} && echo 'sup' > #{download_dir}/hey"
+    specify "directories" do
+      with_tmp do
+        ogfolder = FileUtils.mkdir(@tmpdir.join("hello")).first
+        file = @tmpdir.join("world/world")
+        create_tmpfile("hello/world", "hello")
+        folder = @tmpdir.join("world")
 
-        @host.download(download_dir, path)
-        File.open(path + '/download_dir/hey').read.should == "sup\n"
+        @host.upload(ogfolder, folder)
+        expect(file.file?).to eq true
+        expect(File.directory?(@tmpdir.join("world"))).to eq true
+        expect(file.read.strip).to eq "hello"
+      end
+    end
+  end
+
+  describe :writes do
+    specify "files" do
+      with_tmp do
+        file = @tmpdir.join("hello")
+        @host.write("world", file)
+        expect(file.file?).to eq true
+        expect(file.read.strip).to eq "world"
+      end
+    end
+  end
+
+  describe :downloads do
+    specify "files" do
+      with_tmp do
+        server_file = create_tmpfile("hello", "hello")
+        client_file = @tmpdir.join("world")
+        @host.download(server_file, client_file)
+        expect(client_file.file?).to eq true
+        expect(client_file.read.strip).to eq "hello"
+      end
+    end
+
+    specify "directories" do
+      with_tmp do
+        client_file = @tmpdir.join("world/hello/world")
+        server_folder = FileUtils.mkdir(@tmpdir.join("hello")).first
+        client_base_folder = @tmpdir.join("world").to_s
+        client_folder = @tmpdir.join("world/hello")
+        create_tmpfile("hello/world", "hello")
+
+        @host.download(server_folder, client_base_folder)
+        expect(client_folder.directory?).to eq true
+        expect(client_file.file?).to eq true
+        expect(client_file.read.strip).to eq "hello"
       end
     end
   end
