@@ -1,168 +1,167 @@
 # Gofer!
 
-[![Code Climate](https://codeclimate.com/github/mipearson/gofer.png)](https://codeclimate.com/github/mipearson/gofer) [![Gem Version](https://badge.fury.io/rb/gofer.png)](http://badge.fury.io/rb/gofer) [![Dependency Status](https://gemnasium.com/mipearson/gofer.png)](https://gemnasium.com/mipearson/gofer)
+[![Code Climate](https://codeclimate.com/github/envygeeks/gofer.png)](https://codeclimate.com/github/envygeeks/gofer)
+[![Dependency Status](https://gemnasium.com/envygeeks/gofer.png)](https://gemnasium.com/envygeeks/gofer)
 
+This is my personal fork of https://github.com/mipearson/gofer please see that
+repo if you are looking for something that is aimed at the general public and
+not me.  Though mine does fix some of the issues that were on the TODO I am
+just waiting to see if he would like to collaborate on bringing my code with
+his since we write code in drastically different ways.
 
-**Gofer** is a set of wrappers around the Net::SSH suite of tools to enable consistent access to remote systems.
+## What is Gofer?
 
-**Gofer** has been written to support the needs of system automation scripts. As such, **gofer** will:
+**Gofer** is a set of wrappers around the Net::SSH suite of tools to enable
+consistent access to remote systems. **Gofer** has been written to support the
+needs of system automation scripts. As such, **gofer** will:
 
-  * automatically raise an error if a command returns a non-zero exit status
-  * print and capture STDOUT and STDERR automatically
-  * allow you to access captured STDOUT and STDERR individually or as a combined string
-  * override the above: return non-zero exit status instead of raising an error, suppress output
-  * persist the SSH connection so that multiple commands don't incur connection penalties
-  * allow multiple simultaneous command execution on a cluster of hosts via `Gofer::Cluster`
-
-Full documentation for latest gem release is at [RDoc](http://rdoc.info/gems/gofer/frames)
+  * Print and capture STDOUT and STDERR automatically
+  * Automatically raise an error if a command returns a non-zero exit status
+  * Allow you to access captured STDOUT and STDERR individually or as a combined string
+  * Override the above: return non-zero exit status instead of raising an error, suppress output
+  * Persist the SSH connection so that multiple commands don't incur connection penalties
+  * Allow multiple simultaneous command execution on a cluster of hosts via `Gofer::Cluster`
 
 ## Examples
 
-### Instantiation
+Below you will find several basic examples.
 
-``` ruby
-h = Gofer::Host.new('my.host.com', 'ubuntu', :keys => ['~/.ssh/id_rsa'])
+### Init
+
+```ruby
+ssh = Gofer::Host.new("host.com", "ubuntu", {
+  keys: ["~/.ssh/id_rsa"]
+})
 ```
 
-### Run a command
+### Commands
 
-``` ruby
-h.run "sudo stop mysqld"
+```ruby
+ssh.run("sudo stop mysqld")
 ```
 
-### Copy some files
+### Copy
 
-``` ruby
-h.upload 'file', 'remote_file'
-h.download 'remote_dir', 'dir'
+```ruby
+ssh.upload("file", "remote_file")
+ssh.download("remote_dir", "dir")
 ```
 
-### Interact with the filesystem
+### Interact
 
-``` ruby
-if h.exist?('remote_directory')
-  h.run "rm -rf 'remote_directory'"
-end
-
-h.write("a string buffer", 'a_remote_file')
-puts h.read('a_remote_file')
-puts h.ls('a_remote_dir').join(", ")
+```ruby
+ssh.run("rm -rf 'remote_directory'") if ssh.exist?("remote_directory")
+ssh.write("String", "a_remote_file")
+$stdout.puts ssh.read("a_remote_file")
+$stdout.puts ssh.ls("a_remote_dir").join(", ")
 ```
 
-### Respond to command errors
+### Handle Errors
 
-``` ruby
-h.run "false" # this will raise an error
-response = h.run "false", :capture_exit_status => true # this won't ...
-puts response.exit_status # and will make the exit status available
+```ruby
+ssh.run("false")
+response = ssh.run("false", :capture_exit_status => true)
+$stdout.puts response.exit_status unless response.exit_status == 0
 ```
 
-### Capture output
+### Capture
 
-``` ruby
-response = h.run "echo hello; echo goodbye 1>&2\n"
-puts response         # will print "hello\n"
-puts response.stdout  # will also print "hello\n"
-puts response.stderr  # will print "goodbye\n"
-puts response.output  # will print "hello\ngoodbye\n"
+```ruby
+response = ssh.run("echo hello; echo goodbye 1>&2\n")
+$stdout.puts response
+$stdout.puts response.stdout
+$stdout.puts response.stderr
+$stdout.puts response.output
 ```
 
-### Send input
+### Stdin
 
-``` ruby
-response = h.run "sed 's/foo/bar/'", :stdin => "hello foo\n"
-puts response.output # will print "hello bar"
+```ruby
+response = ssh.run("sed 's/foo/bar/'", :stdin => "hello foo\n")
+$stdout.puts response.output
 ```
 
-### Prefix output
+### Prefix
 
-``` ruby
-h.output_prefix = 'apollo'        # or set :output_prefix on instantiation
-h.run "echo hello; echo goodbye"  # prints apollo: hello\napollo: goodbye
+```ruby
+ssh.output_prefix = "apollo"
+ssh.run("echo hello; echo goodbye")
+# => apollo: hello\napollo: goodbye
 ```
 
-### Suppress output
+### Suppression
 
-``` ruby
-h.run "echo noisy", :quiet => true               # don't print stdout
-h.run "echo noisier 1>&2", :quiet_stderr => true # don't print stderr
-h.quiet = true                                   # never print stdout
+```ruby
+ssh.run "echo noisy", :quiet => true
+ssh.run "echo noisier 1>&2", :quiet_stderr => true
+ssh.quiet = true
 ```
 
-### Run the same commands on multiple hosts
+### Async (Clustered) Hosts
 
-``` ruby
+```ruby
 cluster = Gofer::Cluster.new
-cluster << Gofer::Host.new('my.host.com', 'ubuntu', :keys => ['key.pem'], :output_prefix => "   my")
-cluster << Gofer::Host.new('other.host.com', 'ubuntu', :keys => ['key.pem'], :output_prefix => "other")
-
-# Run on all the hosts at once
+cluster << Gofer::Host.new("host.com", "ubuntu", :output_prefix => "host1")
+cluster << Gofer::Host.new("host.com", "ubuntu", :output_prefix => "host2")
 cluster.run "hostname"
+```
 
-# Run on only one host at a time
+#### Async Concurrency
+
+```ruby
 cluster.max_concurrency = 1
-cluster.run("sudo /etc/init.d/apache2 restart")
+result = cluster.run("sudo /etc/init.d/apache2 restart")
+$stdout.puts results.values.join(", ")
+```
 
-# Run a command on only one host
-host = cluster.shuffle.first
-host.run("rake migrations")
+#### Exceptions
 
-# Inspect the results from each host
-results = cluster.run "echo hostname"
-puts results.values.join(", ") # will print "my.host.com, other.host.com"
-
-# Capture exceptions from each host
-begin
-  cluster.run "rake deploy"
-rescue Gofer::ClusterError => e
-  e.errors.each do |host, exception|
-    $stderr.puts "Failed on #{host} with #{exception}, rolling back ..."
+```ruby
+begin; cluster.run "rake deploy"; rescue Gofer::ClusterError => e
+  e.errors.each do |h, e|
+    $stderr.puts "Failed on #{h} with #{e}, rolling back ..."
     host.run "rake rollback"
   end
+
   raise e
 end
 ```
 
 ## Testing
 
-  * Ensure that your user can ssh as itself to localhost using the key in `~/.ssh/id_rsa`.
-  * Run `rspec spec` or `bundle install && rake spec`
-  * rbenv users can run `test.sh` and ensure their code works on Ruby versions we support
+If you are looking for the true quick and dirty of how to get it up without
+much trouble... take a look at travis.yml in the repo root and it will show
+you how we quickly generate a key and run the tests since Net::SSH does work
+with ~/.ssh/config and the default id_rsa file if you have one installed.
 
-## Contributing
-
-Contributions should be via pull request. Please add tests and a note in the
-`README.md` for new functionality. Please use 1.8.7-compatiable syntax.
+  * Setup ~/.ssh/config for 127.0.0.* to prefer your key.
+  * Ensure that you support dynamic localhost (127.0.0.1, 127.0.0.2)
+  * OR: You can just authorize id_rsa on localhost without ~/.ssh/config.
+  * Run bundle install && rake spec`
 
 ## TODO
 
-  * ls, exists?, directory? should use sftp if available rather than shell commands
-  * Deal with timeouts/disconnects on persistent connections
-  * Release 1.0 & use Semver
-  * Add unit tests, bring in Travis.ci
+  * Deal with timeouts and disconnects on persistent connections.
   * Local system usage (eg `Gofer::Localhost.new.run "hostname"`)
 
 ## License
 
-(The MIT License)
+Copyright (c) 2011-13 Michael Pearson; Copyright (c) 2014 Jordon Bedwell
 
-Copyright (c) 2011-13 Michael Pearson
+Permission is hereby granted, free of charge, to any person obtaining a copy of
+this software and associated documentation files (the 'Software'), to deal in
+the Software without restriction, including without limitation the rights to
+use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
+of the Software, and to permit persons to whom the Software is furnished to do
+so, subject to the following conditions:
 
-Permission is hereby granted, free of charge, to any person obtaining
-a copy of this software and associated documentation files (the
-'Software'), to deal in the Software without restriction, including
-without limitation the rights to use, copy, modify, merge, publish,
-distribute, sublicense, and/or sell copies of the Software, and to
-permit persons to whom the Software is furnished to do so, subject to
-the following conditions:
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
 
-The above copyright notice and this permission notice shall be
-included in all copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND,
-EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
-IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
-CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
-TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
-SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
