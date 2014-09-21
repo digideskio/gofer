@@ -3,9 +3,10 @@ before_install:
  - sudo apt-get install --no-install-recommends --yes openssh-server
  - cat ~/.ssh/id_rsa.pub |tee -a ~/.ssh/authorized_keys
 rvm:
-  - 2.1.0
-  - 2.0.0
-  - 1.9.3
+  - 2.2
+  - 2.1
+  - 2.0
+  - 1.9
 notifications:
   recipients:
     - jordon@envygeeks.io
