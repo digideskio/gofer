@@ -21,6 +21,16 @@ describe Gofer::Host do
       specify("have a combination output")  {  expect(@response.output.strip).to eq "stdout\nstderr" }
       specify("behave like a string and default to stdout") { expect(@response.strip).to eq "stdout" }
       it("captures stdout") { expect(@response.stdout.strip).to eq "stdout" }
+
+      specify "call procs on opts for stdout" do stdout = proc { }
+        expect(stdout).to receive(:call)
+        @host.run("echo stdout", :stdout => stdout)
+      end
+
+      specify "call procs on opts for stderr" do stderr = proc { }
+        expect(stderr).to receive(:call)
+        @host.run("echo stderr 1>&2", :stderr => stderr)
+      end
     end
 
     it "prints responses unless quiet is true" do
