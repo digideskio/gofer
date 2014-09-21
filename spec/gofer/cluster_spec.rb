@@ -14,8 +14,8 @@ describe Gofer::Cluster do
     results = @cluster.run("bash -l -c \"ruby -e 'puts Time.now.to_i; sleep 1; puts Time.now.to_i'\"")
     res1 = results[@host1].stdout.lines.to_a
     res2 = results[@host2].stdout.lines.to_a
-    expect(res1[0]).to eq res2[0]
-    expect(res1[1]).to eq res2[1]
+    expect(res1[0]).to be >= res2[0]
+    expect(res1[1]).to be >= res2[1]
   end
 
   context do
