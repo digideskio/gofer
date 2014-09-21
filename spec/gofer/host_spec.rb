@@ -1,5 +1,4 @@
-require "spec_helper"
-require "tempfile"
+require "rspec/helper"
 
 describe Gofer::Host do
   before :all do

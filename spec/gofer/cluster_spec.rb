@@ -1,4 +1,4 @@
-require 'spec_helper'
+require "rspec/helper"
 
 describe Gofer::Cluster do
 
