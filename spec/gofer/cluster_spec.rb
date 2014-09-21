@@ -27,8 +27,8 @@ describe Gofer::Cluster do
       res1 = results[@host1].stdout.lines.to_a
       res2 = results[@host2].stdout.lines.to_a
 
-      expect(res1[0].to_i + 1).to eq res2[0].to_i
-      expect(res1[1].to_i + 1).to eq res2[1].to_i
+      expect(res2[0].to_i).to be > res1[0].to_i
+      expect(res2[1].to_i).to be > res1[1].to_i
     end
   end
 
