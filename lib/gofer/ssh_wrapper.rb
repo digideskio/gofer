@@ -41,6 +41,7 @@ module Gofer
     # otherwise we just shove it out if you want us to and then handle it.
     # -------------------------------------------------------------------------
 
+    private
     def ssh_execute(ssh, command, opts = {})
       stdout, stderr, output, exit_code =  '', '', '', 0
       opts[:stdout] ||= method(:stdout)
