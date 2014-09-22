@@ -1,7 +1,7 @@
 require "rspec"
 require "gofer"
 
-require File.expand_path("../../support/helpers", __FILE__)
+[:helpers, :shared].each { |v| require File.expand_path("../../support/#{v}", __FILE__) }
 RSpec.configure do |config|
   config.include IntegrationHelpers
 end

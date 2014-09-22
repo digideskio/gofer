@@ -29,9 +29,11 @@ Below you will find several basic examples.
 ### Init
 
 ```ruby
-ssh = Gofer::Host.new("host.com", "ubuntu", {
-  keys: ["~/.ssh/id_rsa"]
-})
+local = Gofer::Local.new
+```
+
+```ruby
+ssh = Gofer::Host.new("host.com", "ubuntu", keys: ["~/.ssh/id_rsa"])
 ```
 
 ### Commands
@@ -142,7 +144,6 @@ with ~/.ssh/config and the default id_rsa file if you have one installed.
 ## TODO
 
   * Deal with timeouts and disconnects on persistent connections.
-  * Local system usage (eg `Gofer::Localhost.new.run "hostname"`)
 
 ## License
 

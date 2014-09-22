@@ -12,8 +12,8 @@ module Gofer
   # ---------------------------------------------------------------------------
 
   class Host
-    attr_accessor  :quiet, :output_prefix
-    attr_reader :hostname, :username
+    attr_accessor :quiet, :output_prefix
+    attr_reader   :hostname, :username
 
     # -------------------------------------------------------------------------
     # Create a new connection to a host
