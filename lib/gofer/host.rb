@@ -1,7 +1,6 @@
 require 'tempfile'
 
 module Gofer
-  include Helpers
 
   # ---------------------------------------------------------------------------
   # A persistent, authenticated SSH connection to a single host.
@@ -13,8 +12,9 @@ module Gofer
   # ---------------------------------------------------------------------------
 
   class Host
+    attr_reader :hostname, :username
     attr_accessor :quiet, :output_prefix
-    attr_reader   :hostname, :username
+    include Helpers
 
     # -------------------------------------------------------------------------
     # Create a new connection to a host
