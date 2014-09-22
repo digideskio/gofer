@@ -1,6 +1,7 @@
 require 'tempfile'
 
 module Gofer
+  include Helpers
 
   # ---------------------------------------------------------------------------
   # A persistent, authenticated SSH connection to a single host.

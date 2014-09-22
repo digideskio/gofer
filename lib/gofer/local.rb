@@ -4,7 +4,7 @@ module Gofer
   class Local
     attr_accessor :quiet, :output_prefix
     attr_reader   :hostname, :username
-    include OutputHandlers
+    include OutputHandlers, Helpers
 
     def initialize(opts = {})
       @hostname, @username = "localhost", ENV["USER"]

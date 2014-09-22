@@ -1,3 +1,4 @@
+require "gofer/helpers"
 require "gofer/cluster_error"
 require "gofer/output_handlers"
 require "gofer/host_error"
