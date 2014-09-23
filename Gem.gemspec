@@ -17,6 +17,6 @@ Gem::Specification.new do |s|
 
   s.add_development_dependency("rspec", "~> 3.1")
   s.add_development_dependency("rspec-mocks", "~> 3.1")
-  s.add_dependency("net-ssh", ">= 2.0.23")
-  s.add_dependency("net-scp", ">= 1.0.4")
+  s.add_dependency("net-ssh", "~> 2.9")
+  s.add_dependency("net-scp", ">= 1.2")
 end
