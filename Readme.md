@@ -2,6 +2,7 @@
 
 [![Code Climate](https://codeclimate.com/github/envygeeks/gofer.png)](https://codeclimate.com/github/envygeeks/gofer)
 [![Dependency Status](https://gemnasium.com/envygeeks/gofer.png)](https://gemnasium.com/envygeeks/gofer)
+[![Build Status](https://travis-ci.org/envygeeks/gofer.svg?branch=master)](https://travis-ci.org/envygeeks/gofer)
 
 This is my personal fork of https://github.com/mipearson/gofer please see that
 repo if you are looking for something that is aimed at the general public and
