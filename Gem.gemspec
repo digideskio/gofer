@@ -14,9 +14,10 @@ Gem::Specification.new do |s|
   s.files = `git ls-files`.split("\n")
   s.test_files = `git ls-files -- {test,spec,features}/*`.split("\n")
   s.require_paths = ["lib"]
+  s.license = "MIT"
 
   s.add_development_dependency("rspec", "~> 3.1")
   s.add_development_dependency("rspec-mocks", "~> 3.1")
   s.add_dependency("net-ssh", "~> 2.9")
-  s.add_dependency("net-scp", ">= 1.2")
+  s.add_dependency("net-scp", "~> 1.2")
 end
