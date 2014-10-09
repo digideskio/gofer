@@ -11,8 +11,7 @@ module Gofer
     # it with the output prefix the user supplies.
 
     def stdout(data, opts = {})
-      opts = normalize_opts(opts)
-      unless opts[:quiet]
+      unless (opts = normalize_opts(opts)) && opts[:quiet]
         $stdout.write wrap_output(data, opts[:output_prefix])
       end
     end
@@ -21,8 +20,7 @@ module Gofer
     # it with the output prefix the user supplies.
 
     def stderr(data, opts = {})
-      opts = normalize_opts(opts)
-      unless opts[:quiet_stderr]
+      unless (opts = normalize_opts(opts)) && opts[:quiet_stderr]
         $stderr.write wrap_output(data, opts[:output_prefix])
       end
     end
