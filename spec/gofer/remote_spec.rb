@@ -1,47 +1,38 @@
 require "rspec/helper"
 
-describe Gofer::Host do
+describe Gofer::Remote do
   before :all do
-    @host = Gofer::Host.new("127.0.0.1", ENV["USER"], :quiet => true)
+    @host = Gofer::Remote.new("127.0.0.1", ENV["USER"], {
+      :quiet => true
+    })
   end
 
-  specify "#hostname == connected hostname" do
-    expect(@host.hostname).to eq "127.0.0.1"
+  specify("#hostname == connected hostname") { expect(@host.hostname).to eq "127.0.0.1" }
+  specify("#username == connected username") { expect(@host.username).to eq ENV["USER"] }
+  specify("#to_s == user@host") { expect(@host.to_s).to eq "#{ENV["USER"]}@127.0.0.1"   }
+
+  specify "#inspect" do
+    expect(@host.inspect).to eq "<Gofer::Remote @host = 127.0.0.1, @user = #{ENV["USER"]}>"
+  end
+
+  specify "accept custom stdio" do
+    host = Gofer::Remote.new("127.0.0.1", ENV["USER"], {
+      :stdio => TempStdio
+    })
+
+    host.run("echo hello")
+    expect(host.stdio).to be_kind_of TempStdio
+    expect(host.stdio.stringio.string.strip).to eq "hello"
   end
 
   describe :run do
     it_behaves_like :run
+
     specify "raise if command returns a non-zero" do
-      begin  @host.run "false"; rescue Gofer::HostError => e
-        expect(e).to be_kind_of Gofer::HostError
-        expect(e.host).to be_kind_of Gofer::Host
+      begin  @host.run "false"; rescue Gofer::Error => e
+        expect(e).to be_kind_of Gofer::Error
+        expect(e.host).to be_kind_of Gofer::Remote
         expect(e.message).to match(/failed with exit status/)
-      end
-    end
-  end
-
-  describe :exist? do
-    specify "return true if path exists" do
-      with_tmp do
-        expect(@host.exist?(create_tmpfile("exists"))).to eq true
-      end
-    end
-
-    specify "return false if path doesn't exist" do
-      expect(@host.exist?(File.join("/tmp", SecureRandom.hex))).to eq false
-    end
-  end
-
-  describe :directory? do
-    specify "return true if dir exists" do
-      with_tmp do
-        expect(@host.directory?(@tmpdir)).to eq true
-      end
-    end
-
-    specify "return false if dir doesn't exist" do
-      with_tmp do
-        expect(@host.directory?(create_tmpfile("exists"))).to eq false
       end
     end
   end
@@ -49,20 +40,24 @@ describe Gofer::Host do
   describe :read do
     it "reads the contents of a file" do
       with_tmp do
-        expect(@host.read(create_tmpfile("hello", "hello\nworld")).strip).to eq "hello\nworld"
+        expect(@host.read(create_tmpfile("hello", "hello\nworld")).strip).to \
+          eq "hello\nworld"
       end
     end
   end
 
-  describe :ls do
-    it "lists the contents of a dir" do
+  describe :write do
+    specify "files" do
       with_tmp do
-        expect(@host.ls(File.dirname(create_tmpfile("lstmp")))).to eq ["lstmp"]
+        file = @tmpdir.join("hello")
+        @host.write("world", file)
+        expect(file.file?).to eq true
+        expect(file.read.strip).to eq "world"
       end
     end
   end
 
-  describe :uploads do
+  describe :upload do
     specify "files" do
       with_tmp do
         client_file = create_tmpfile("hello", "hello")
@@ -88,18 +83,7 @@ describe Gofer::Host do
     end
   end
 
-  describe :writes do
-    specify "files" do
-      with_tmp do
-        file = @tmpdir.join("hello")
-        @host.write("world", file)
-        expect(file.file?).to eq true
-        expect(file.read.strip).to eq "world"
-      end
-    end
-  end
-
-  describe :downloads do
+  describe :download do
     specify "files" do
       with_tmp do
         server_file = create_tmpfile("hello", "hello")

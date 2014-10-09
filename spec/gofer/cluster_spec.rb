@@ -3,8 +3,8 @@ require "rspec/helper"
 describe Gofer::Cluster do
 
   before :all do
-    @host1 = Gofer::Host.new("127.0.0.1", ENV["USER"], quiet: true)
-    @host2 = Gofer::Host.new("127.0.0.2", ENV["USER"], quiet: true)
+    @host1 = Gofer::Host.new("127.0.0.1", ENV["USER"], :quiet => true)
+    @host2 = Gofer::Host.new("127.0.0.2", ENV["USER"], :quiet => true)
     [@host1, @host2].each do |v|
       (@cluster ||= Gofer::Cluster.new) << v
     end
@@ -38,8 +38,8 @@ describe Gofer::Cluster do
     begin; @cluster.run "false"
     rescue Gofer::ClusterError => e
       expect(e.errors.keys.length).to eq(2)
-      expect(e.errors[@host1]).to be_a(Gofer::HostError)
-      expect(e.errors[@host2]).to be_a(Gofer::HostError)
+      expect(e.errors[@host1]).to be_a(Gofer::Error)
+      expect(e.errors[@host2]).to be_a(Gofer::Error)
     end
   end
 
@@ -49,48 +49,10 @@ describe Gofer::Cluster do
     expect(results[@host2]).to eq expected
   end
 
-  describe :exist? do
-    specify "return true if exists" do
-      with_tmp do
-        results_should_eq(true)  { @cluster.exist?(@tmpdir) }
-      end
-    end
-
-    specify "return false if ! exist" do
-      with_tmp do
-        results_should_eq(false) { @cluster.exist?(@tmpdir + '/blargh') }
-      end
-    end
-  end
-
-  describe :directory? do
-    specify "return true if directory" do
-      with_tmp do
-        results_should_eq(true) { @cluster.directory?(@tmpdir) }
-      end
-    end
-
-    specify "return false if directory" do
-      with_tmp do
-        results_should_eq(false) { @cluster.directory?(create_tmpfile("hello")) }
-      end
-    end
-  end
-
   describe :read do
     specify "read the contents" do
       with_tmp do
         results_should_eq("world") { @cluster.read(create_tmpfile("hello", "world")) }
-      end
-    end
-  end
-
-  describe :ls do
-    it "lists the contents of a directory" do
-      with_tmp do
-        results_should_eq(["lstmp"]) do
-          @cluster.ls(File.dirname(create_tmpfile("lstmp")))
-        end
       end
     end
   end

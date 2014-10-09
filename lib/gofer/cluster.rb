@@ -1,48 +1,31 @@
+require "gofer/cluster_error"
 require "thread"
 
 module Gofer
-
-  # ---------------------------------------------------------------------------
-  # A collection of Gofer::Host instances that can run commands simultaneously
-  #
-  # Gofer::Cluster supports most of the methods of Gofer::Host. Commands
-  # will be run simultaneously, with up to +max_concurrency+ commands running
-  # at the same time. If +max_concurrency+ is unset all hosts in the cluster
-  # will receive commands at the same time.
-  #
-  # Results from commands run are returned in a Hash, keyed by host.
-  # ---------------------------------------------------------------------------
-
   class Cluster
     attr_accessor :max_concurrency
-    attr_reader   :hosts
+    attr_reader :hosts
 
-    # -------------------------------------------------------------------------
-    # Create a new cluster of Gofer::Host connections.
-    #
-    # @param parties [Array] Gofer::Host or other Gofer::Cluster instances
-    # @opt opts max_concurrency [String] Maximum number of commands to async.
-    # -------------------------------------------------------------------------
-
-    def initialize(parties=[], opts={})
+    def initialize(parties = [], opts = {})
       @hosts, @max_concurrency = [], opts.delete(:max_concurrency)
       parties.each do |i|
         self << i
       end
     end
 
-    # -------------------------------------------------------------------------
     # Currency effective concurrency, either +max_concurrency+ or the number of
     # Gofer::Host instances we contain.
-    # -------------------------------------------------------------------------
 
     def concurrency
-      max_concurrency.nil? ? hosts.length : [max_concurrency, hosts.length].min
+      if ! @max_concurrency
+        then hosts.length
+        else [ @max_concurrency, @hosts.length ].min
+      end
     end
 
-    # -------------------------------------------------------------------------
-    # Add a Gofer::Host or the hosts belonging to a Gofer::Cluster to this instance.
-    # -------------------------------------------------------------------------
+    # Add a Gofer::Host or the hosts belonging to a Gofer::Cluster to this
+    # instance so that you can have hosts that are not in this and hosts that
+    # are on this.  The choice is in your hands.
 
     def <<(other)
       case other
@@ -53,18 +36,17 @@ module Gofer
       end
     end
 
-    # -------------------------------------------------------------------------
+    #
 
-    [:run, :exist?, :directory?, :ls, :upload, :read, :write].each do |k|
+    [:run, :upload, :read, :write].each do |k|
       define_method k do |*a|
         threaded(k, *a)
       end
     end
 
-    # -------------------------------------------------------------------------
     # Spawn +concurrency+ worker threads, each of which pops work off the
-    # +_in+ queue, and writes values to the +_out+ queue for syncronisation.
-    # -------------------------------------------------------------------------
+    # +_in+ queue, and writes values to the +_out+ queue for syncronization.
+    # And at the end go ahead and return an error or results.
 
     private
     def threaded(meth, *args)
@@ -94,15 +76,9 @@ module Gofer
         end
       end
 
-      length.times do
-        _out.pop
-      end
-
-      # Give it to them because they need it nao.
+      length.times { _out.pop }
       errors.size > 0 ? raise(Gofer::ClusterError.new(errors)) : results
     end
-
-    # -------------------------------------------------------------------------
 
     def run_queue
       Queue.new.tap do |q|

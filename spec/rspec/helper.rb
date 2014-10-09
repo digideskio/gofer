@@ -1,4 +1,5 @@
 require "rspec"
+require "support/simplecov"
 require "gofer"
 
 [:helpers, :shared].each { |v| require File.expand_path("../../support/#{v}", __FILE__) }

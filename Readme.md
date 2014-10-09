@@ -3,6 +3,11 @@
 [![Code Climate](https://codeclimate.com/github/envygeeks/gofer.png)](https://codeclimate.com/github/envygeeks/gofer)
 [![Dependency Status](https://gemnasium.com/envygeeks/gofer.png)](https://gemnasium.com/envygeeks/gofer)
 [![Build Status](https://travis-ci.org/envygeeks/gofer.svg?branch=master)](https://travis-ci.org/envygeeks/gofer)
+[![Coverage Status](https://img.shields.io/coveralls/envygeeks/gofer.svg)](https://coveralls.io/r/envygeeks/gofer)
+
+*The docs you are reading are for the future 2.0.0 version of envygeeks-gofer
+which is still away off because it requires me to finish adding in my deploy
+stuff and helpers.  Please note that a lot has changed.*
 
 This is my personal fork of https://github.com/mipearson/gofer please see that
 repo if you are looking for something that is aimed at the general public and
@@ -34,7 +39,9 @@ local = Gofer::Local.new
 ```
 
 ```ruby
-ssh = Gofer::Host.new("host.com", "ubuntu", keys: ["~/.ssh/id_rsa"])
+ssh = Gofer::Remote.new("host.com", "ubuntu", :keys => [
+  "~/.ssh/id_rsa"
+])
 ```
 
 ### Commands
@@ -56,7 +63,6 @@ ssh.download("remote_dir", "dir")
 ssh.run("rm -rf 'remote_directory'") if ssh.exist?("remote_directory")
 ssh.write("String", "a_remote_file")
 $stdout.puts ssh.read("a_remote_file")
-$stdout.puts ssh.ls("a_remote_dir").join(", ")
 ```
 
 ### Handle Errors
@@ -65,6 +71,42 @@ $stdout.puts ssh.ls("a_remote_dir").join(", ")
 ssh.run("false")
 response = ssh.run("false", :capture_exit_status => true)
 $stdout.puts response.exit_status unless response.exit_status == 0
+```
+
+### Custom Output Handler
+
+Gofer handles StdIO using a custom wrapper that has a base set of options, and
+a normalizer that allows you to accept options via each method directly, so
+that you can have a per-case option set, if you wish to add in your own cond.
+you can use this example:
+
+```ruby
+class MyStdio < Gofer::Stdio
+  def initialize(opts)
+    @output_level = opts.delete(:output_level)
+    super(opts)
+  end
+
+  # @see lib/gofer/stdio.rb
+
+  def stdout(line, opts)
+    opts = normalize_opts(opts)
+    unless output_level < 2 || opts[:quiet]
+      $stdout.puts wrap_output(line)
+    end
+  end
+end
+
+Gofer::Remote.new(:stdio => MyStdio)
+```
+
+### Change where stdout and stderr goes without Stdio wrappers
+
+```ruby
+Gofer::Remote.new({
+  :stdout => stdout = StringIO.new,
+  :stderr => stderr = StringIO.new
+})
 ```
 
 ### Capture

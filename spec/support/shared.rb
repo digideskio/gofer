@@ -11,16 +11,6 @@ shared_examples_for :run do
       specify("have a combination output")  {  expect(@response.output.strip).to eq "stdout\nstderr" }
       specify("behave like a string and default to stdout") { expect(@response.strip).to eq "stdout" }
       it("captures stdout") { expect(@response.stdout.strip).to eq "stdout" }
-
-      specify "call procs on opts for stdout" do stdout = proc { }
-        expect(stdout).to receive(:call)
-        @host.run("echo stdout", :stdout => stdout)
-      end
-
-      specify "call procs on opts for stderr" do stderr = proc { }
-        expect(stderr).to receive(:call)
-        @host.run("echo stderr 1>&2", :stderr => stderr)
-      end
     end
 
     it "prints responses unless quiet is true" do
@@ -34,13 +24,10 @@ shared_examples_for :run do
     end
 
     context "with a host output prefix" do
-      before(:all) { @host.output_prefix = "derp" }
-      after (:all) { @host.output_prefix = nil    }
-
       specify "prefix first line of stdout and stderr" do
         with_captured_output do
           @host.run "echo stdout; echo stdout2; echo stderr 1>&2; echo stderr2 1>&2", {
-            :quiet => false, :quiet_stderr => false
+            :quiet => false, :quiet_stderr => false, :output_prefix => "derp"
           }
 
           expect(@stdout.strip).to eq "derp: stdout\nderp: stdout2"
@@ -50,7 +37,10 @@ shared_examples_for :run do
 
       specify "don't prefix continued output on new lines" do
         with_captured_output do
-          @host.run "echo -n foo; echo bar; echo baz; ", :quiet => false
+          @host.run "echo -n foo; echo bar; echo baz; ", {
+            :quiet => false, :output_prefix => "derp"
+          }
+
           expect(@combined.strip).to eq "derp: foobar\nderp: baz"
         end
       end

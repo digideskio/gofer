@@ -1,11 +1,9 @@
-require "gofer/helpers"
-require "gofer/cluster_error"
-require "gofer/output_handlers"
-require "gofer/host_error"
 require "gofer/version"
 
-require "gofer/local"
+require "gofer/stdio"
+require "gofer/remote"
 require "gofer/cluster"
-require "gofer/ssh_wrapper"
-require "gofer/response"
-require "gofer/host"
+require "gofer/local"
+
+Gofer::Host = Gofer::Remote
+# ^ For now we wrap it out.

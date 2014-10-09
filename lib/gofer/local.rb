@@ -1,24 +1,33 @@
+require "gofer/error"
+require "gofer/response"
+require "gofer/base"
 require "open3"
 
 module Gofer
-  class Local
-    attr_accessor :quiet, :output_prefix
-    attr_reader   :hostname, :username
-    include OutputHandlers, Helpers
+  class Local < Base
+    attr_reader :hostname, :username
+
+    # Open up a class that runs commands locally using +Open3.popen3+ unlike
+    # the other classes if there are opts we don't know then they are ignored
+    # and not even used but we accept the same base.
+    #
+    # @opt opts quiet Whether or not to raise or pass the exit status.
+    # @opt opts output_prefix the prefix to output each line of stdout with.
 
     def initialize(opts = {})
-      @hostname, @username = "localhost", ENV["USER"]
-      @quiet, @output_prefix = opts.delete(:quiet), opts.delete(:output_prefix)
-      @at_start_of_line = true
+      @username, @hostname = ENV["USER"], "localhost"
+      super(opts) # It's destructive to opts.
     end
 
-    def run(command, opts = {})
-      opts[:quiet] = quiet unless opts.has_key?(:quiet)
-      stdout, stderr, output, exit_status = "", "", "", 0
-      opts[:output_prefix] ||= output_prefix
-      opts[:stdout] ||= method(:stdout)
-      opts[:stderr] ||= method(:stderr)
+    # Run the command using +Open3.popen3+
 
+    def run(command, opts = {})
+      exit_status = 0
+      stdout = ""
+      stderr = ""
+      output = ""
+
+      opts = normalize_opts(opts)
       Open3.popen3(command) do |i, o, e, t|
         if opts[:stdin]
           i.puts opts[:stdin]
@@ -26,21 +35,21 @@ module Gofer
 
         i.close
         while line = o.gets do
-          opts[:stdout].call(
-            line, opts
-          )
-
-          stdout += line
-          output += line
+          write_stdio({
+            :opts => opts,
+            :stdout_in => line,
+            :stdout_out => stdout,
+            :output => output
+          })
         end
 
         while line = e.gets do
-          opts[:stderr].call(
-            line, opts
-          )
-
-          stderr += line
-          output += line
+          write_stdio({
+            :opts => opts,
+            :stderr_in => line,
+            :stderr_out => stderr,
+            :output => output
+          })
         end
 
         if ! t.value.success?
@@ -51,9 +60,8 @@ module Gofer
       # Just mock out what Gofer normally mocks out.
       out = Gofer::Response.new(stdout, stderr, output, exit_status)
       if ! opts[:capture_exit_status] && out.exit_status != 0
-        raise HostError.new(
-          self, out, "Command #{command} failed with exit status #{out.exit_status}"
-        )
+        raise Error.new(self, out, \
+          "Command #{command} failed with exit status #{out.exit_status}")
       end
     out
     end
