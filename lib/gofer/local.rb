@@ -59,10 +59,7 @@ module Gofer
 
       # Just mock out what Gofer normally mocks out.
       out = Gofer::Response.new(stdout, stderr, output, exit_status)
-      if ! opts[:capture_exit_status] && out.exit_status != 0
-        raise Error.new(self, out, \
-          "Command #{command} failed with exit status #{out.exit_status}")
-      end
+      raise_if_bad_exit(command, out, opts)
     out
     end
   end

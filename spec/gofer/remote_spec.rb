@@ -32,7 +32,7 @@ describe Gofer::Remote do
       begin  @host.run "false"; rescue Gofer::Error => e
         expect(e).to be_kind_of Gofer::Error
         expect(e.host).to be_kind_of Gofer::Remote
-        expect(e.message).to match(/failed with exit status/)
+        expect(e.message).to match(/failed with bad exit/)
       end
     end
   end

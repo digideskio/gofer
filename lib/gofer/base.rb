@@ -53,5 +53,13 @@ module Gofer
     def inspect
       "<#{self.class} @host = #{@hostname}, @user = #{@username}>"
     end
+
+    # Raise an error if there is a bad exit status.
+
+    def raise_if_bad_exit(command, out, opts)
+      if ! opts[:capture_exit_status] && out.exit_status != 0
+        raise Error.new(self, out, command)
+      end
+    end
   end
 end

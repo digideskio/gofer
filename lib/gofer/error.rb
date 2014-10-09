@@ -1,10 +1,14 @@
 module Gofer
   class Error < Exception
-    attr_reader :response, :host
+    attr_reader :response, :host, :command
 
-    def initialize(host, response, message)
-      @host, @response = host, response
-      super("#{host.hostname}: #{message}")
+    def initialize(host, response, command)
+      @command = command
+      @response = response
+      @host = host
+
+      # Because realistically this the only error we ever experience....
+      super("#{@host.hostname}: Command #{@command} failed with bad exit #{@response.exit_status}")
     end
   end
 end

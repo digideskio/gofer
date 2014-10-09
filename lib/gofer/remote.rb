@@ -22,11 +22,7 @@ module Gofer
 
     def run(command, opts = {})
       out = ssh_execute(command, opts = normalize_opts(opts))
-      if ! opts[:capture_exit_status] && out.exit_status != 0
-        raise Error.new(self, out, \
-          "Command #{command} failed with exit status #{out.exit_status}")
-      end
-
+      raise_if_bad_exit(command, out, opts)
     out
     end
 
