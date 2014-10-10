@@ -25,32 +25,33 @@ shared_examples_for :run do
 
     context "with a host output prefix" do
       specify "prefix first line of stdout and stderr" do
-        with_captured_output do
-          @host.run "echo stdout; echo stdout2; echo stderr 1>&2; echo stderr2 1>&2", {
-            :quiet => false, :quiet_stderr => false, :output_prefix => "derp"
-          }
+        out1, out2 = StringIO.new, StringIO.new
+        @host.run "echo stdout; echo stdout2; echo stderr 1>&2; echo stderr2 1>&2", {
+          :quiet => false,
+          :quiet_stderr => false,
+          :output_prefix => "derp",
+          :stdout => out1,
+          :stderr => out2
+        }
 
-          expect(@stdout.strip).to eq "derp: stdout\nderp: stdout2"
-          expect(@stderr.strip).to eq "derp: stderr\nderp: stderr2"
-        end
+        expect(out1.string.strip).to eq "derp: stdout\nderp: stdout2"
+        expect(out2.string.strip).to eq "derp: stderr\nderp: stderr2"
       end
 
       specify "don't prefix continued output on new lines" do
-        with_captured_output do
-          @host.run "echo -n foo; echo bar; echo baz; ", {
-            :quiet => false, :output_prefix => "derp"
-          }
+        out = StringIO.new
+        @host.run "echo -n foo; echo bar; echo baz; ", {
+          :quiet => false, :output_prefix => "derp", :stdout => out
+        }
 
-          expect(@combined.strip).to eq "derp: foobar\nderp: baz"
-        end
+        expect(out.string.strip).to eq "derp: foobar\nderp: baz"
       end
     end
 
     specify "process stdin when stdin is set" do
-      with_captured_output do
-        @host.run "sed 's/foo/baz/'", :stdin => "foobar", :quiet => false
-        expect(@stdout.strip).to eq "bazbar"
-      end
+      out = StringIO.new
+      @host.run "sed 's/foo/baz/'", :stdin => "foobar", :quiet => false, :stdout => out
+      expect(out.string.strip).to eq "bazbar"
     end
 
     specify "capture a non-zero exit status if told" do

@@ -2,8 +2,10 @@ module Gofer
   class Stdio
 
     def initialize(opts)
+      @stderr = opts.delete(:stderr)
       @quiet_stderr = opts.delete(:quiet_stderr)
       @output_prefix = opts.delete(:output_prefix)
+      @stdout = opts.delete(:stdout)
       @quiet = opts.delete(:quiet)
     end
 
@@ -12,7 +14,7 @@ module Gofer
 
     def stdout(data, opts = {})
       unless (opts = normalize_opts(opts)) && opts[:quiet]
-        $stdout.write wrap_output(data, opts[:output_prefix])
+        opts[:stdout].write wrap_output(data, opts[:output_prefix])
       end
     end
 
@@ -21,7 +23,7 @@ module Gofer
 
     def stderr(data, opts = {})
       unless (opts = normalize_opts(opts)) && opts[:quiet_stderr]
-        $stderr.write wrap_output(data, opts[:output_prefix])
+        opts[:stderr].write wrap_output(data, opts[:output_prefix])
       end
     end
 
@@ -42,11 +44,13 @@ module Gofer
     # are coming in via +#stderr+ and +#stdout+.
 
     private
-    def normalize_opts(opt)
-      opt[:quiet_stderr] = @quiet_stderr unless opt.has_key?(:quiet_stderr)
-      opt[:output_prefix] = @output_prefix unless opt.has_key?(:output_prefix)
-      opt[:quiet] = @quiet unless opt.has_key?(:quiet)
-    opt
+    def normalize_opts(opts)
+      opts[:stderr] = @stderr unless opts.has_key?(:stderr)
+      opts[:quiet_stderr] = @quiet_stderr unless opts.has_key?(:quiet_stderr)
+      opts[:output_prefix] = @output_prefix unless opts.has_key?(:output_prefix)
+      opts[:quiet] = @quiet unless opts.has_key?(:quiet)
+      opts[:stdout] = @stdout unless opts.has_key?(:stdout)
+    opts
     end
   end
 end

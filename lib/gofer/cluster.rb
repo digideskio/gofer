@@ -7,7 +7,9 @@ module Gofer
     attr_reader :hosts
 
     def initialize(parties = [], opts = {})
-      @hosts, @max_concurrency = [], opts.delete(:max_concurrency)
+      @max_concurrency = opts.delete(:max_concurrency)
+      @hosts = []
+
       parties.each do |i|
         self << i
       end
@@ -53,7 +55,6 @@ module Gofer
       results_semaphore, errors_semaphore = Mutex.new, Mutex.new
       _in, _out = run_queue, Queue.new
       results, errors = {}, {}
-      length = _in.length
 
       concurrency.times do
         Thread.new do
@@ -76,7 +77,7 @@ module Gofer
         end
       end
 
-      length.times { _out.pop }
+      _in.length.times { _out.pop }
       errors.size > 0 ? raise(Gofer::ClusterError.new(errors)) : results
     end
 

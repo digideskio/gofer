@@ -41,18 +41,4 @@ module IntegrationHelpers
       force: true, recursive: true
     @tmpdir = nil
   end
-
-  # Captures the output so you can read it, into the vars +@stdout+, +@stderr+,
-  # and +@combined+.
-
-  def with_captured_output
-    @stdout, @stderr, @combined = "", "", ""
-    allow($stdout).to receive(:write) { |*a| @stdout.<<(*a); @combined.<<(*a) }
-    allow($stderr).to receive(:write) { |*a| @stderr.<<(*a); @combined.<<(*a) }
-    yield
-  ensure
-    [:@stdout, :@stderr, :@combined].each do |v|
-      remove_instance_variable v
-    end
-  end
 end

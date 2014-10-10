@@ -12,6 +12,7 @@ module Gofer
     def initialize(hostname, username, opts = {})
       super(opts) # It's destructive to opts.
 
+      opts[:timeout] ||= 12
       @hostname, @username = hostname, username
       @ssh = Net::SSH.start(@hostname, @username, opts)
       @scp = Net::SCP.new(@ssh)
