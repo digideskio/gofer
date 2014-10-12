@@ -7,15 +7,30 @@ require "net/scp"
 
 module Gofer
   class Remote < Base
-    attr_accessor :hostname, :username, :ssh, :scp, :stdio
+    attr_accessor :hostname, :username, :stdio
 
     def initialize(hostname, username, opts = {})
       super(opts) # It's destructive to opts.
 
-      opts[:timeout] ||= 12
+      @ssh_opts = opts.dup
+      @ssh_opts[:timeout] ||= 12
       @hostname, @username = hostname, username
-      @ssh = Net::SSH.start(@hostname, @username, opts)
-      @scp = Net::SCP.new(@ssh)
+    end
+
+    # Defer the loading of +Net::SSH+ and +Net::SCP+ so that we don't have any
+    # performance when loading a bunch of these objects into an object to be
+    # called later.  This would be annoying for users.
+
+    def ssh
+      @ssh ||= Net::SSH.start(
+        @hostname, @username, @ssh_opts
+      )
+    end
+
+    def scp
+      @scp ||= Net::SCP.new(
+        ssh
+      )
     end
 
     # Run +command+. Will raise an error if +command+ exits with a non-zero
@@ -69,7 +84,7 @@ module Gofer
       output = ""
 
       opts = normalize_opts(opts)
-      @ssh.open_channel do |c|
+      ssh.open_channel do |c|
         c.exec(command) do |_, s|
           raise "SSH Channnel: Couldn't execute command #{command}" unless s
 
@@ -104,7 +119,7 @@ module Gofer
         end
       end
 
-      @ssh.loop
+      ssh.loop
       Gofer::Response.new(stdout, stderr, output, exit_status)
     end
   end
