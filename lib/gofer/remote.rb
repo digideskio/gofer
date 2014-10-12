@@ -27,6 +27,8 @@ module Gofer
       )
     end
 
+    #
+
     def scp
       @scp ||= Net::SCP.new(
         ssh
