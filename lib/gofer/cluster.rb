@@ -45,9 +45,27 @@ module Gofer
       end
     end
 
+    # A simple wrapper around a common Mutex so we can sync writes to our
+    # result and error hash without much trouble, since problems.
+
     def lock
       (@mutex ||= Mutex.new).synchronize do
         yield
+      end
+    end
+
+    # Slices out the hosts to match the concurrency.
+
+    def sliced_threading
+      @hosts.each_slice(concurrency).each do |v|
+        threads = [ ]
+        v.each do |h|
+          threads << yield(h)
+        end
+
+        threads.map(
+          &:join
+        )
       end
     end
 
@@ -58,31 +76,25 @@ module Gofer
     private
     def threaded(meth, *args)
       results, errors, threads = {}, {}, []
-      @hosts.each_slice(concurrency).each do |v|
-        threads = [ ]
-        v.each do |h|
-          threads << Thread.new do
-            begin
-              Timeout.timeout(h.timeout)  do
-                result = h.send(meth, *args)
+      sliced_threading do |h|
+        Thread.new do
+          begin
+            Timeout.timeout(h.timeout)  do
+              result = h.send(meth, *args)
 
-                lock do
-                  results[h] = result
-                end
-              end
-            rescue Timeout::Error, Exception => error
               lock do
-                errors[h] = error
+                results[h] = result
               end
+            end
+          rescue Timeout::Error, Exception => error
+            lock do
+              errors[h] = error
             end
           end
         end
-
-        # Run them.
-        threads.map(&:join)
       end
 
-      # And now you get your results.
+      # And now you get your results. Have a nice day!
       errors.size > 0 ? raise(Gofer::ClusterError.new(errors)) : results
     end
   end
