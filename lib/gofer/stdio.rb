@@ -7,6 +7,7 @@ module Gofer
       @output_prefix = opts.delete(:output_prefix)
       @stdout = opts.delete(:stdout)
       @quiet = opts.delete(:quiet)
+      @prefix_next_line = true
     end
 
     # Print each line to stdout after wrapping it using +#wrap_output+ to wrap
@@ -30,14 +31,16 @@ module Gofer
     # Wrap the line with with the +@output_prefix+ the user supplies.
 
     private
-    def wrap_output(data, output_prefix)
+    def wrap_output(out, output_prefix)
       unless output_prefix
-        return data
+        return out
       end
 
-      @at_start_of_line = data.end_with?("\n")
-      data = "#{output_prefix}: " + data if @at_start_of_line
-      data.gsub(/\n(.)/, "\n#{output_prefix}: \\1")
+      out = "#{output_prefix}: " + out \
+        if @prefix_next_line
+
+      @prefix_next_line = out.end_with?("\n")
+      out.gsub(/\n(.)/, "\n#{output_prefix}: \\1")
     end
 
     # Normalize the options so they are consistent and merged with opts that
