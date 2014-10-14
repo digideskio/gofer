@@ -57,7 +57,7 @@ module Gofer
     # Slices out the hosts to match the concurrency.
 
     def sliced_threading
-      @hosts.each_slice(concurrency).each do |v|
+      @hosts.each_slice(concurrency) do |v|
         threads = [ ]
         v.each do |h|
           threads << yield(h)
