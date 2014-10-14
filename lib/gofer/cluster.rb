@@ -58,7 +58,6 @@ module Gofer
     private
     def threaded(meth, *args)
       results, errors, threads = {}, {}, []
-      (require "pry"; binding.pry) if args.last == :pry && args.pop
       @hosts.each_slice(concurrency).each do |v|
         threads = [ ]
         v.each do |h|
