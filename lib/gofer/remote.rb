@@ -7,13 +7,13 @@ require "net/scp"
 
 module Gofer
   class Remote < Base
-    attr_accessor :hostname, :username, :stdio
+    attr_accessor :hostname, :username, :stdio, :timeout
 
     def initialize(hostname, username, opts = {})
       super(opts) # It's destructive to opts.
 
       @ssh_opts = opts.dup
-      @ssh_opts[:timeout] ||= 12
+      @timeout = @ssh_opts[:timeout] ||= 12
       @hostname, @username = hostname, username
     end
 
