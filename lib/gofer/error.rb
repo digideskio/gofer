@@ -1,5 +1,5 @@
 module Gofer
-  class Error < Exception
+  class Error < StandardError
     attr_reader :response, :host, :command
 
     def initialize(host, response, command)

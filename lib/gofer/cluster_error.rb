@@ -1,5 +1,5 @@
 module Gofer
-  class ClusterError < Exception
+  class ClusterError < StandardError
     attr_reader :errors
 
     def initialize(errors = {})

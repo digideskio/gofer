@@ -77,17 +77,16 @@ module Gofer
 
     private
     def threaded(meth, *args)
-      results, errors, threads = {}, {}, []
+      results, errors = {}, {}
       sliced_threading do |h|
         begin
-          Timeout.timeout(h.timeout)  do
-            result = h.send(meth, *args)
+          result = h.send(meth, *args)
 
-            lock do
-              results[h] = result
-            end
+          lock do
+            results[h] = result
           end
-        rescue Timeout::Error, Exception => error
+        # That's all we care about.
+        rescue Gofer::Error => error
           lock do
             errors[h] = error
           end
