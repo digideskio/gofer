@@ -54,13 +54,16 @@ module Gofer
       end
     end
 
-    # Slices out the hosts to match the concurrency.
+    # Slices out the hosts to match the concurrency and then thread based on
+    # that so that we are only running those amount of threads at once.
 
     def sliced_threading
       @hosts.each_slice(concurrency) do |v|
         threads = [ ]
         v.each do |h|
-          threads << yield(h)
+          threads << Thread.new do
+            yield(h)
+          end
         end
 
         threads.map(
@@ -69,27 +72,24 @@ module Gofer
       end
     end
 
-    # Spawn +concurrency+ worker threads, each of which pops work off the
-    # +_in+ queue, and writes values to the +_out+ queue for syncronization.
-    # And at the end go ahead and return an error or results.
+    # Wrap inside of sliced threading to do some work caching specific things
+    # and sending back results into a "global" result and error handler.
 
     private
     def threaded(meth, *args)
       results, errors, threads = {}, {}, []
       sliced_threading do |h|
-        Thread.new do
-          begin
-            Timeout.timeout(h.timeout)  do
-              result = h.send(meth, *args)
+        begin
+          Timeout.timeout(h.timeout)  do
+            result = h.send(meth, *args)
 
-              lock do
-                results[h] = result
-              end
-            end
-          rescue Timeout::Error, Exception => error
             lock do
-              errors[h] = error
+              results[h] = result
             end
+          end
+        rescue Timeout::Error, Exception => error
+          lock do
+            errors[h] = error
           end
         end
       end
