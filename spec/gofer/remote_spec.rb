@@ -39,8 +39,8 @@ describe Gofer::Remote do
 
   describe :read do
     it "reads the contents of a file" do
-      with_tmp do
-        expect(@host.read(create_tmpfile("hello", "hello\nworld")).strip).to \
+      with_tmp do |t|
+        expect(@host.read(t.create_tmpfile("hello", "hello\nworld")).strip).to \
           eq "hello\nworld"
       end
     end
@@ -48,8 +48,8 @@ describe Gofer::Remote do
 
   describe :write do
     specify "files" do
-      with_tmp do
-        file = @tmpdir.join("hello")
+      with_tmp do |t|
+        file = t.tmpdir.join("hello")
         @host.write("world", file)
         expect(file.file?).to eq true
         expect(file.read.strip).to eq "world"
@@ -59,9 +59,9 @@ describe Gofer::Remote do
 
   describe :upload do
     specify "files" do
-      with_tmp do
-        client_file = create_tmpfile("hello", "hello")
-        server_file = @tmpdir.join("world")
+      with_tmp do |t|
+        client_file = t.create_tmpfile("hello", "hello")
+        server_file = t.tmpdir.join("world")
         @host.upload(client_file, server_file)
         expect(server_file.file?).to eq true
         expect(server_file.read.strip).to eq "hello"
@@ -69,15 +69,15 @@ describe Gofer::Remote do
     end
 
     specify "directories" do
-      with_tmp do
-        ogfolder = FileUtils.mkdir(@tmpdir.join("hello")).first
-        file = @tmpdir.join("world/world")
-        create_tmpfile("hello/world", "hello")
-        folder = @tmpdir.join("world")
+      with_tmp do |t|
+        ogfolder = FileUtils.mkdir(t.tmpdir.join("hello")).first
+        file = t.tmpdir.join("world/world")
+        t.create_tmpfile("hello/world", "hello")
+        folder = t.tmpdir.join("world")
 
         @host.upload(ogfolder, folder)
         expect(file.file?).to eq true
-        expect(File.directory?(@tmpdir.join("world"))).to eq true
+        expect(File.directory?(t.tmpdir.join("world"))).to eq true
         expect(file.read.strip).to eq "hello"
       end
     end
@@ -85,9 +85,9 @@ describe Gofer::Remote do
 
   describe :download do
     specify "files" do
-      with_tmp do
-        server_file = create_tmpfile("hello", "hello")
-        client_file = @tmpdir.join("world")
+      with_tmp do |t|
+        server_file = t.create_tmpfile("hello", "hello")
+        client_file = t.tmpdir.join("world")
         @host.download(server_file, client_file)
         expect(client_file.file?).to eq true
         expect(client_file.read.strip).to eq "hello"
@@ -95,12 +95,12 @@ describe Gofer::Remote do
     end
 
     specify "directories" do
-      with_tmp do
-        client_file = @tmpdir.join("world/hello/world")
-        server_folder = FileUtils.mkdir(@tmpdir.join("hello")).first
-        client_base_folder = @tmpdir.join("world").to_s
-        client_folder = @tmpdir.join("world/hello")
-        create_tmpfile("hello/world", "hello")
+      with_tmp do |t|
+        client_file = t.tmpdir.join("world/hello/world")
+        server_folder = FileUtils.mkdir(t.tmpdir.join("hello")).first
+        client_base_folder = t.tmpdir.join("world").to_s
+        client_folder = t.tmpdir.join("world/hello")
+        t.create_tmpfile("hello/world", "hello")
 
         @host.download(server_folder, client_base_folder)
         expect(client_folder.directory?).to eq true

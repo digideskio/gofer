@@ -51,22 +51,22 @@ describe Gofer::Cluster do
 
   describe :read do
     specify "read the contents" do
-      with_tmp do
-        results_should_eq("world") { @cluster.read(create_tmpfile("hello", "world")) }
+      with_tmp do |t|
+        results_should_eq("world") { @cluster.read(t.create_tmpfile("hello", "world")) }
       end
     end
   end
 
   describe :upload do
     specify "upload the damn file" do
-      with_tmp do
+      with_tmp do |t|
         meth0 = @cluster.hosts[0].method(:upload)
         meth1 = @cluster.hosts[1].method(:upload)
 
-        client_file0 = create_tmpfile("hello0", "hello0")
-        client_file1 = create_tmpfile("hello1", "hello1")
-        server_file0 = @tmpdir.join("world0")
-        server_file1 = @tmpdir.join("world1")
+        client_file0 = t.create_tmpfile("hello0", "hello0")
+        client_file1 = t.create_tmpfile("hello1", "hello1")
+        server_file0 = t.tmpdir.join("world0")
+        server_file1 = t.tmpdir.join("world1")
 
         allow(@cluster.hosts[0]).to receive(:upload) { |_, _| meth0.call(client_file0, server_file0) }
         allow(@cluster.hosts[1]).to receive(:upload) { |_, _| meth1.call(client_file1, server_file1) }
@@ -82,11 +82,11 @@ describe Gofer::Cluster do
 
   describe :write do
     specify "write the damn file" do
-      with_tmp do
+      with_tmp do |t|
         meth0 = @cluster.hosts[0].method(:write)
         meth1 = @cluster.hosts[1].method(:write)
-        file0 = @tmpdir.join("hello0")
-        file1 = @tmpdir.join("hello1")
+        file0 = t.tmpdir.join("hello0")
+        file1 = t.tmpdir.join("hello1")
 
         allow(@cluster.hosts[0]).to receive(:write) { |text, _| meth0.call(text, file0) }
         allow(@cluster.hosts[1]).to receive(:write) { |text, _| meth1.call(text, file1) }

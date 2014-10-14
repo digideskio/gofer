@@ -1,13 +1,9 @@
 require "fileutils"
 require "tmpdir"
 
-# Provides a class for us to test the :stdio => Stdio option in +Gofer::Local+,
-# and +Gofer::Remote+ making sure that they work.
-
 class TempStdio < Gofer::Stdio
   def stdout(line, opts)
     normalize_opts(opts)
-
     if opts.size > 0
       stringio.write(line)
     end
@@ -18,10 +14,16 @@ class TempStdio < Gofer::Stdio
   end
 end
 
-module IntegrationHelpers
+class TmpTmp
+  attr_reader :tmpdir
 
-  # Create a temp file (this file must be used within +#with_temp+ or it will
-  # fail... unless you provide a +@tmpdir+ ivar.)
+  def initialize
+    @tmpdir = Pathname.new(
+      Dir.mktmpdir("gofertest")
+    )
+  end
+
+  # Create a tempfile in the tmpdir.
 
   def create_tmpfile(file, val = nil)
     file = FileUtils.touch(@tmpdir.join(file)).first
@@ -29,16 +31,19 @@ module IntegrationHelpers
     file
   end
 
-  # Creates a tmpdir so you can start doing what you need with tmpfiles in that
-  # tmpdir... Ensures that it is removed but sometimes if you exit! in pry
-  # it will not remove them so it makes no matter in that case.
+  # Destroy the tmpdir.
 
-  def with_tmp(&block)
-    @tmpdir = Pathname.new(Dir.mktmpdir("gofertest"))
-    yield
-  ensure
+  def destroy
     FileUtils.remove_entry_secure @tmpdir, \
       force: true, recursive: true
-    @tmpdir = nil
+  end
+end
+
+module IntegrationHelpers
+  def with_tmp(&block)
+    block.call(tmptmp = TmpTmp.new)
+  ensure
+    # Ensure.
+    tmptmp.destroy
   end
 end
