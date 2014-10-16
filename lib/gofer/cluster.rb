@@ -18,8 +18,10 @@ module Gofer
 
     def concurrency
       if ! @max_concurrency || @max_concurrency == 0
-        then hosts.length
-        else (r = [@max_concurrency, @hosts.length].min) > 0 ? r : hosts.length
+        hosts.length
+      else
+        r = [@max_concurrency, @hosts.length].min
+        r > 0 ? r : hosts.length
       end
     end
 
@@ -54,22 +56,13 @@ module Gofer
       end
     end
 
-    # Slices out the hosts to match the concurrency and then thread based on
-    # that so that we are only running those amount of threads at once.
+    # The queue.
 
-    def sliced_threading
-      @hosts.each_slice(concurrency) do |v|
-        threads = [ ]
-        v.each do |h|
-          threads << Thread.new do
-            yield(h)
-          end
-        end
-
-        threads.map(
-          &:join
-        )
+    def host_queue
+      out = Queue.new and @hosts.each do |v|
+        out << v
       end
+    out
     end
 
     # Wrap inside of sliced threading to do some work caching specific things
@@ -77,23 +70,23 @@ module Gofer
 
     private
     def threaded(meth, *args)
-      results, errors = {}, {}
-      sliced_threading do |h|
-        begin
-          result = h.send(meth, *args)
-
-          lock do
-            results[h] = result
-          end
-        # That's all we care about.
-        rescue Gofer::Error => error
-          lock do
-            errors[h] = error
+      queue, threads, results, errors = host_queue, [], {}, {}
+      concurrency.times do |v|
+        threads << Thread.new do
+          until queue.empty? || ! (host = queue.pop(true) rescue nil)
+            begin
+              result = host.send(meth, *args)
+              lock { results[host] = result }
+            rescue Gofer::Error => error
+              lock do
+                errors[host] = error
+              end
+            end
           end
         end
       end
 
-      # And now you get your results. Have a nice day!
+      threads.map(&:join)
       errors.size > 0 ? raise(Gofer::ClusterError.new(errors)) : results
     end
   end
