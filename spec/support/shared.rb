@@ -58,5 +58,17 @@ shared_examples_for :run do
       response = @host.run("false", :capture_exit_status => true)
       expect(response.exit_status).to eq 1
     end
+
+    specify "use ANSI when told to" do
+      out = StringIO.new
+      @host.run "echo -n foobar", :stdout => out, :quiet_stdout => false, :ansi => true
+      expect(out.string).to eq "\e[32mfoobar\e[0m"
+    end
+
+    specify "no ANSI color unless requested." do
+      out = StringIO.new
+      @host.run "echo foobar", :stdout => out, :quiet_stdout => false
+      expect(out.string.strip).to eq "foobar"
+    end
   end
 end

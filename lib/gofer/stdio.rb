@@ -1,9 +1,11 @@
+require "gofer/ansi"
+
 module Gofer
   class Stdio
     KNOWN_OPTIONS = [
-      :stderr, :stdout,
+      :ansi, :quiet_stdout,
       :quiet_stderr, :output_prefix,
-      :quiet_stdout
+      :stderr, :stdout
     ]
 
     def initialize(opts)
@@ -18,8 +20,8 @@ module Gofer
 
     def stdout(data, opts = {})
       unless (opts = normalize_opts(opts)) && opts[:quiet_stdout]
-        opts[:stdout].write wrap_output(
-          data, opts[:output_prefix]
+        opts[:stdout].write wrap_ansi(
+          :green, wrap_output(data, opts[:output_prefix]), opts
         )
       end
     end
@@ -29,10 +31,20 @@ module Gofer
 
     def stderr(data, opts = {})
       unless (opts = normalize_opts(opts)) && opts[:quiet_stderr]
-        opts[:stderr].write wrap_output(
-          data, opts[:output_prefix]
+        opts[:stderr].write wrap_ansi(
+          :red, wrap_output(data, opts[:output_prefix]), opts
         )
       end
+    end
+
+    # Wraps the output in an ANSI Color so that you can have some pretty output
+    # if it pleases you, and if it doesn't then just pass +:ansi => false+
+
+    def wrap_ansi(color, str, opts)
+      unless ! opts[:ansi]
+        return Ansi.send(color, str)
+      end
+    str
     end
 
     # Wrap the line with with the +@output_prefix+ the user supplies.

@@ -3,7 +3,7 @@ module Gofer
     attr_reader :hostname, :username
 
     KNOWN_OPTIONS = [
-      :stderr, :stdout, :stdio,
+      :stderr, :stdout, :stdio, :ansi,
       :output_prefix, :capture_exit_status, :quiet_stdout,
       :quiet_stderr, :timeout
     ]
@@ -18,6 +18,7 @@ module Gofer
       @stdio_opts[:output_prefix] = opts[:output_prefix]
       @stdio_opts[:quiet_stderr] = opts[:quiet_stderr]
       @stdio_opts[:stderr] = opts[:stderr]
+      @stdio_opts[:ansi] = opts[:ansi]
 
       @ssh_opts = opts.delete_if do |k, v|
         KNOWN_OPTIONS.include?(k)

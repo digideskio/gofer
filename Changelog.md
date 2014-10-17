@@ -1,5 +1,6 @@
 # 2.0.0
 
+* Add ANSI coloring for people who like it.
 * Added `:stdout` and `:stderr` to allow redirection.
 * Removed the delete insanity, opts are non-destructive now.
 * Implemented an STDIO class to simplify and consolidate output.

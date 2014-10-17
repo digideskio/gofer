@@ -13,6 +13,3 @@ notifications:
 branches:
   only:
     - master
-env:
-  - ""
-  - "WITH_ANSI=true"
