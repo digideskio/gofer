@@ -1,14 +1,16 @@
 module Gofer
   class Stdio
+    KNOWN_OPTIONS = [
+      :stderr, :stdout,
+      :quiet_stderr, :output_prefix,
+      :quiet_stdout
+    ]
 
     def initialize(opts)
-      @stderr = opts.delete(:stderr)
-      @quiet_stderr = opts.delete(:quiet_stderr)
-      @output_prefix = opts.delete(:output_prefix)
-      @quiet_stdout = opts.delete(:quiet_stdout)
-      @stdout = opts.delete(:stdout)
+      @opts = opts
       @prefix_next_line = true
-      @extra_opts = opts
+      @opts[:stdout] ||= $stdout
+      @opts[:stderr] ||= $stderr
     end
 
     # Print each line to stdout after wrapping it using +#wrap_output+ to wrap
@@ -53,11 +55,9 @@ module Gofer
 
     private
     def normalize_opts(opts)
-      opts[:stderr] = @stderr unless opts.has_key?(:stderr)
-      opts[:quiet_stderr] = @quiet_stderr unless opts.has_key?(:quiet_stderr)
-      opts[:output_prefix] = @output_prefix unless opts.has_key?(:output_prefix)
-      opts[:quiet_stdout] = @quiet_stdout unless opts.has_key?(:quiet_stdout)
-      opts[:stdout] = @stdout unless opts.has_key?(:stdout)
+      KNOWN_OPTIONS.each do |k|
+        opts[k] = @opts[k] unless opts.has_key?(k)
+      end
     opts
     end
   end

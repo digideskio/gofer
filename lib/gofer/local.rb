@@ -5,7 +5,6 @@ require "open3"
 
 module Gofer
   class Local < Base
-    attr_reader :hostname, :username
 
     # Open up a class that runs commands locally using +Open3.popen3+ unlike
     # the other classes if there are opts we don't know then they are ignored
@@ -16,7 +15,7 @@ module Gofer
 
     def initialize(opts = {})
       @username, @hostname = ENV["USER"], "localhost"
-      super(opts) # It's destructive to opts.
+      super
     end
 
     # Run the command using +Open3.popen3+

@@ -21,8 +21,8 @@ describe Gofer::Remote do
     })
 
     host.run("echo hello")
-    expect(host.stdio).to be_kind_of TempStdio
-    expect(host.stdio.stringio.string.strip).to eq "hello"
+    expect(host.send(:stdio)).to be_kind_of TempStdio
+    expect(host.send(:stdio).stringio.string.strip).to eq "hello"
   end
 
   describe :run do

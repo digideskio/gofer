@@ -7,7 +7,7 @@ module Gofer
     attr_reader :hosts
 
     def initialize(parties = [], opts = {})
-      @max_concurrency = opts.delete(:max_concurrency).to_s.to_i
+      @max_concurrency = opts[:max_concurrency].to_s.to_i
       parties.each do |i|
         self << i
       end
