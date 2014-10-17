@@ -5,7 +5,7 @@ module Gofer
     def initialize(opts = {})
       @capture_exit_status = opts.delete(:capture_exit_status)
 
-      quiet = opts.delete(:quiet)
+      quiet_stdout = opts.delete(:quiet_stdout)
       output_prefix = opts.delete(:output_prefix)
       quiet_stderr = opts.delete(:quiet_stderr)
       stdout = opts[:stdout] || $stdout
@@ -15,8 +15,8 @@ module Gofer
         :stderr => stderr,
         :quiet_stderr => quiet_stderr,
         :output_prefix => output_prefix,
+        :quiet_stdout => quiet_stdout,
         :stdout => stdout,
-        :quiet => quiet
       })
     end
 
@@ -35,6 +35,7 @@ module Gofer
     # anywhere (run, and others.)
 
     def normalize_opts(opt = {})
+      opt[:timeout] = @timeout unless opt.has_key?(:timeout)
       opt[:capture_exit_status] = @capture_exit_status unless \
         opt.has_key?(:capture_exit_status)
     opt

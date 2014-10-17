@@ -3,8 +3,8 @@ require "rspec/helper"
 describe Gofer::Cluster do
 
   before :all do
-    @host1 = Gofer::Host.new("127.0.0.1", ENV["USER"], :quiet => true)
-    @host2 = Gofer::Host.new("127.0.0.2", ENV["USER"], :quiet => true)
+    @host1 = Gofer::Host.new("127.0.0.1", ENV["USER"], :quiet_stdout => true)
+    @host2 = Gofer::Host.new("127.0.0.2", ENV["USER"], :quiet_stdout => true)
     [@host1, @host2].each do |v|
       (@cluster ||= Gofer::Cluster.new) << v
     end

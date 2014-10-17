@@ -12,7 +12,7 @@ module Gofer
     def initialize(hostname, username, opts = {})
       super(opts) # It's destructive to opts.
 
-      @ssh_opts = opts.dup
+      @ssh_opts = opts
       @timeout = @ssh_opts[:timeout] ||= 12
       @hostname, @username = hostname, username
     end
@@ -70,7 +70,7 @@ module Gofer
 
     [:download, :upload].each do |k|
       define_method k do |f, t, o = {}|
-        scp.send("#{k}!", f, t, o.merge(recursive: File.directory?(f)))
+        scp.send("#{k}!", f, t, o.merge(:recursive => File.directory?(f)))
       end
     end
 

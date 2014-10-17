@@ -2,7 +2,7 @@ require "rspec/helper"
 
 describe Gofer::Local do
   before :all do
-    @host = Gofer::Local.new(:quiet => true)
+    @host = Gofer::Local.new(:quiet_stdout => true)
   end
 
   specify("#hostname == localhost")   { expect(@host.hostname).to eq "localhost" }

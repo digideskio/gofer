@@ -5,17 +5,20 @@ module Gofer
       @stderr = opts.delete(:stderr)
       @quiet_stderr = opts.delete(:quiet_stderr)
       @output_prefix = opts.delete(:output_prefix)
+      @quiet_stdout = opts.delete(:quiet_stdout)
       @stdout = opts.delete(:stdout)
-      @quiet = opts.delete(:quiet)
       @prefix_next_line = true
+      @extra_opts = opts
     end
 
     # Print each line to stdout after wrapping it using +#wrap_output+ to wrap
     # it with the output prefix the user supplies.
 
     def stdout(data, opts = {})
-      unless (opts = normalize_opts(opts)) && opts[:quiet]
-        opts[:stdout].write wrap_output(data, opts[:output_prefix])
+      unless (opts = normalize_opts(opts)) && opts[:quiet_stdout]
+        opts[:stdout].write wrap_output(
+          data, opts[:output_prefix]
+        )
       end
     end
 
@@ -24,7 +27,9 @@ module Gofer
 
     def stderr(data, opts = {})
       unless (opts = normalize_opts(opts)) && opts[:quiet_stderr]
-        opts[:stderr].write wrap_output(data, opts[:output_prefix])
+        opts[:stderr].write wrap_output(
+          data, opts[:output_prefix]
+        )
       end
     end
 
@@ -51,7 +56,7 @@ module Gofer
       opts[:stderr] = @stderr unless opts.has_key?(:stderr)
       opts[:quiet_stderr] = @quiet_stderr unless opts.has_key?(:quiet_stderr)
       opts[:output_prefix] = @output_prefix unless opts.has_key?(:output_prefix)
-      opts[:quiet] = @quiet unless opts.has_key?(:quiet)
+      opts[:quiet_stdout] = @quiet_stdout unless opts.has_key?(:quiet_stdout)
       opts[:stdout] = @stdout unless opts.has_key?(:stdout)
     opts
     end

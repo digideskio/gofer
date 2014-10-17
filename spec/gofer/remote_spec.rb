@@ -3,7 +3,7 @@ require "rspec/helper"
 describe Gofer::Remote do
   before :all do
     @host = Gofer::Remote.new("127.0.0.1", ENV["USER"], {
-      :quiet => true
+      :quiet_stdout => true
     })
   end
 

@@ -44,6 +44,25 @@ ssh = Gofer::Remote.new("host.com", "ubuntu", :keys => [
 ])
 ```
 
+### Options
+
+There are options that can be passed into initialize and options that can be
+passed into run.  Both accept any number of extra options that even we don't
+recognize but there is one big difference, extra options that are not known
+on `#run` (both `Gofer::Local` and `Gofer::Remote`) are passed into
+`Gofer::Stdio` and any options that are unknown on `Gofer::Remote` are
+passed into `Net::SSH`
+
+#### Known Options
+
+```ruby
+:stdout # Custom STDOUT
+:stdio # Custom STDIO Class.
+:output_prefix # Use an output Prefix.
+:timtout # Currently unused but also passed to `Net::SSH`
+:stderr # Custom STDERR
+```
+
 ### Commands
 
 ```ruby
@@ -91,7 +110,7 @@ class MyStdio < Gofer::Stdio
 
   def stdout(line, opts)
     opts = normalize_opts(opts)
-    unless output_level < 2 || opts[:quiet]
+    unless output_level < 2 || opts[:quiet_stdout]
       $stdout.puts wrap_output(line)
     end
   end
@@ -137,7 +156,7 @@ ssh.run("echo hello; echo goodbye")
 ### Suppression
 
 ```ruby
-ssh.run "echo noisy", :quiet => true
+ssh.run "echo noisy", :quiet_stdout => true
 ssh.run "echo noisier 1>&2", :quiet_stderr => true
 ssh.quiet = true
 ```
