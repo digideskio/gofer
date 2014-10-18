@@ -12,7 +12,7 @@ describe Gofer::Remote do
   specify("#to_s == user@host") { expect(@host.to_s).to eq "#{ENV["USER"]}@127.0.0.1"   }
 
   specify "#inspect" do
-    expect(@host.inspect).to eq "<Gofer::Remote @host = 127.0.0.1, @user = #{ENV["USER"]}>"
+    expect(@host.inspect).to eq %Q{<Gofer::Remote "#{ENV["USER"]}@127.0.0.1">}
   end
 
   specify "accept custom stdio" do

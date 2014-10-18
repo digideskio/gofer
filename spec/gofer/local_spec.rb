@@ -10,7 +10,7 @@ describe Gofer::Local do
   specify("#username == ENV['USER']") { expect(@host.username).to eq ENV["USER"] }
 
   specify "#inspect" do
-    expect(@host.inspect).to eq "<Gofer::Local @host = localhost, @user = #{ENV["USER"]}>"
+    expect(@host.inspect).to eq %Q{<Gofer::Local "#{ENV["USER"]}@localhost">}
   end
 
   it "accepts a custom stdio" do

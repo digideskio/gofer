@@ -47,7 +47,7 @@ module Gofer
     end
 
     def inspect
-      "<#{self.class} @host = #{@hostname}, @user = #{@username}>"
+      %Q{<#{self.class} "#{@username}@#{@hostname}">}
     end
 
     private
