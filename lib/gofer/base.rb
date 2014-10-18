@@ -5,13 +5,14 @@ module Gofer
     KNOWN_OPTS = [
       :stderr, :stdout, :stdio, :ansi,
       :output_prefix, :capture_exit_status, :quiet_stdout,
-      :quiet_stderr, :timeout
+      :quiet_stderr, :timeout, :env
     ]
 
     def initialize(opts = {})
       @capture_exit_status = opts[:capture_exit_status]
       @stdio_class, @stdio_opts = opts[:stdio] || Stdio, {}
       @timeout = opts[:timeout] || 12
+      @env = opts[:env] || {}
 
       @stdio_opts[:stdout] = opts[:stdout]
       @stdio_opts[:quiet_stdout] = opts[:quiet_stdout]
@@ -46,9 +47,13 @@ module Gofer
     private
     def normalize_opts(opts = {})
       opts[:timeout] = @timeout unless opts.has_key?(:timeout)
+      opts[:env] = @env.merge(opts[:env] || {}).inject({}) do |h, (k, v)|
+        h.update(k.to_s => v.to_s)
+      end
+
       opts[:capture_exit_status] = @capture_exit_status unless \
         opts.has_key?(:capture_exit_status)
-      opts
+    opts
     end
 
     private

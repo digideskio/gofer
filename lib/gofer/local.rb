@@ -17,7 +17,7 @@ module Gofer
       output = ""
 
       opts = normalize_opts(opts)
-      Open3.popen3(command) do |i, o, e, t|
+      Open3.popen3(opts[:env], command) do |i, o, e, t|
         if opts[:stdin]
           i.puts opts[:stdin]
         end

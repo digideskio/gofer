@@ -54,8 +54,20 @@ module Gofer
       end
     end
 
+    # Because a lot of servers don't have AcceptEnv past LC_* there is no
+    # reason to ever rely on +Net::SSH+ to send the environment, just send it
+    # by attaching it as an export on each command.
+
     private
-    def ssh_execute(command, opts = {})
+    def build_env(cmd, env)
+      env.each do |k, v|
+        cmd = cmd.prepend(%Q{export #{k}="#{v}"; })
+      end
+    cmd
+    end
+
+    private
+    def ssh_execute(cmd, opts = {})
       exit_status = 0
       stdout = ""
       stderr = ""
@@ -63,7 +75,7 @@ module Gofer
 
       opts = normalize_opts(opts)
       ssh.open_channel do |c|
-        c.exec(command) do |_, s|
+        c.exec(build_env(cmd, opts[:env])) do |_, s|
           raise "SSH Channnel: Couldn't execute command #{command}" unless s
 
           c.on_extended_data do |_, t, d|

@@ -8,3 +8,4 @@
 * Removed SSHWrapper in favor of `Gofer::Remote` and `Gofer::Base` for `Gofer::Local` and `Gofer::Remote`
 * Modified exception handling.  Now it will throw syntax errors.
 * Simplified the pooled threading for `Gofer::Cluster`
+* Add support for environment variables.

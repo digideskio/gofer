@@ -13,6 +13,19 @@ shared_examples_for :run do
       it("captures stdout") { expect(@response.stdout.strip).to eq "stdout" }
     end
 
+    it "accepts environment variables" do
+      out = StringIO.new
+      @host.run "echo $RAILS_ENV", {
+        :stdout => out,
+        :quiet_stdout => false,
+        :env => {
+          :RAILS_ENV => :production
+        }
+      }
+
+      expect(out.string.strip).to eq "production"
+    end
+
     it "prints responses unless quiet is true" do
       expect($stdout).to receive(:write).with "stdout\n"
       @host.run "echo stdout", :quiet_stdout => false

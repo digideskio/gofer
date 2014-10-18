@@ -60,6 +60,7 @@ passed into `Net::SSH`
 :stdio # Custom STDIO Class.
 :output_prefix # Use an output Prefix.
 :timtout # Currently unused but also passed to `Net::SSH`
+:env # Environment variables to set.
 :stderr # Custom STDERR
 ```
 
@@ -189,6 +190,15 @@ begin; cluster.run "rake deploy"; rescue Gofer::ClusterError => e
 
   raise e
 end
+```
+
+#### Environment Variables
+
+```ruby
+host1 = Gofer::Remote.new("user", "host", :env => { :VAR1 => :val })
+host2 = Gofer::Local.new(:env => { :VAR1 => :val })
+host1.run("echo $VAR1; echo $VAR2", :env => { :VAR2 => :val })
+host2.run("echo $VAR1; echo $VAR2", :env => { :VAR2 => :val })
 ```
 
 ## Testing
