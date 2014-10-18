@@ -5,20 +5,10 @@ require "open3"
 
 module Gofer
   class Local < Base
-
-    # Open up a class that runs commands locally using +Open3.popen3+ unlike
-    # the other classes if there are opts we don't know then they are ignored
-    # and not even used but we accept the same base.
-    #
-    # @opt opts quiet Whether or not to raise or pass the exit status.
-    # @opt opts output_prefix the prefix to output each line of stdout with.
-
     def initialize(opts = {})
       @username, @hostname = ENV["USER"], "localhost"
       super
     end
-
-    # Run the command using +Open3.popen3+
 
     def run(command, opts = {})
       exit_status = 0

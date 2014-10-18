@@ -13,9 +13,6 @@ module Gofer
       end
     end
 
-    # Currency effective concurrency, either +max_concurrency+ or the number of
-    # Gofer::Host instances we contain.
-
     def concurrency
       if ! @max_concurrency || @max_concurrency == 0
         hosts.length
@@ -24,10 +21,6 @@ module Gofer
         r > 0 ? r : hosts.length
       end
     end
-
-    # Add a Gofer::Host or the hosts belonging to a Gofer::Cluster to this
-    # instance so that you can have hosts that are not in this and hosts that
-    # are on this.  The choice is in your hands.
 
     def <<(other)
       @hosts ||= []
@@ -39,16 +32,11 @@ module Gofer
       end
     end
 
-    #
-
     [:run, :upload, :read, :write].each do |k|
       define_method k do |*a|
         threaded(k, *a)
       end
     end
-
-    # A simple wrapper around a common Mutex so we can sync writes to our
-    # result and error hash without much trouble, since problems.
 
     def lock
       (@mutex ||= Mutex.new).synchronize do
@@ -56,17 +44,12 @@ module Gofer
       end
     end
 
-    # The queue.
-
     def host_queue
       out = Queue.new and @hosts.each do |v|
         out << v
       end
     out
     end
-
-    # Wrap inside of sliced threading to do some work caching specific things
-    # and sending back results into a "global" result and error handler.
 
     private
     def threaded(meth, *args)

@@ -25,20 +25,25 @@ module Gofer
       end
     end
 
-    # A wrapper that de-duplicates stuff to write to Stdio.
-
-    def write_stdio(oe = {})
-      oe[:output] << oe[:stderr_in] if oe[:stderr_in]
-      oe[:output] << oe[:stdout_in] if oe[:stdout_in]
-      stdio.stderr(oe[:stderr_in], oe[:opts]) if oe[:stderr_in]
-      stdio.stdout(oe[:stdout_in], oe[:opts]) if oe[:stdout_in]
-      oe[:stderr_out] << oe[:stderr_in] if oe[:stderr_in] && oe[:stderr_out]
-      oe[:stdout_out] << oe[:stdout_in] if oe[:stdout_in] && oe[:stdout_out]
+    def write_stdio(out_err = {})
+      # _in is the output returned, _out is the STDOUT (FD).
+      out_error[:output] << out_error[:stderr_in] if out_error[:stderr_in]
+      out_error[:output] << out_error[:stdout_in] if out_error[:stdout_in]
+      stdio.stderr(out_error[:stderr_in], out_error[:opts]) if out_error[:stderr_in]
+      stdio.stdout(out_error[:stdout_in], out_error[:opts]) if out_error[:stdout_in]
+      out_error[:stderr_out] << out_error[:stderr_in] if out_error[:stderr_in] && out_error[:stderr_out]
+      out_error[:stdout_out] << out_error[:stdout_in] if out_error[:stdout_in] && out_error[:stdout_out]
     end
 
-    # Normalizes the opts so that we can accept opts from pretty much
-    # anywhere (run, and others.)
+    def to_s
+      "#{@username}@#{@hostname}"
+    end
 
+    def inspect
+      "<#{self.class} @host = #{@hostname}, @user = #{@username}>"
+    end
+
+    private
     def normalize_opts(opts = {})
       opts[:timeout] = @timeout unless opts.has_key?(:timeout)
       opts[:capture_exit_status] = @capture_exit_status unless \
@@ -46,22 +51,7 @@ module Gofer
       opts
     end
 
-    # Allows you to see the +#to_s+ as "user@hostname" so that you can always
-    # run +#to_s+ and go back to the primitive form.
-
-    def to_s
-      "#{@username}@#{@hostname}"
-    end
-
-    # A more elegent viewing of the inspection that keeps stuff from folding
-    # over when debugging inside of pry and stuff like that.
-
-    def inspect
-      "<#{self.class} @host = #{@hostname}, @user = #{@username}>"
-    end
-
-    # Raise an error if there is a bad exit status.
-
+    private
     def raise_if_bad_exit(command, out, opts)
       if ! opts[:capture_exit_status] && out.exit_status != 0
         raise Error.new(self, out, command)
