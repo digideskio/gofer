@@ -7,7 +7,7 @@ module Gofer
       @response = response
       @host = host
 
-      super("#{@host.hostname}: Command #{@command} failed with #{@response.exit_status}")
+      super("command #{@command} exited with #{@response.exit_status}")
     end
   end
 end

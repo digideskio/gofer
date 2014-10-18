@@ -28,7 +28,7 @@ describe Gofer::Local do
       begin  @host.run "false"; rescue Gofer::Error => e
         expect(e).to be_kind_of Gofer::Error
         expect(e.host).to be_kind_of Gofer::Local
-        expect(e.message).to match(/failed with bad exit/)
+        expect(e.message).to match(/command[^\b]+exited with \d/)
       end
     end
   end
