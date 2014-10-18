@@ -15,19 +15,13 @@ module Gofer
       @opts[:stderr] ||= $stderr
     end
 
-    def stdout(data, opts = {})
-      unless (opts = normalize_opts(opts)) && opts[:quiet_stdout]
-        opts[:stdout].write wrap_ansi(
-          :green, wrap_output(data, opts[:output_prefix]), opts
-        )
-      end
-    end
-
-    def stderr(data, opts = {})
-      unless (opts = normalize_opts(opts)) && opts[:quiet_stderr]
-        opts[:stderr].write wrap_ansi(
-          :red, wrap_output(data, opts[:output_prefix]), opts
-        )
+    { :stdout => :green, :stderr => :red }.each do |k ,v|
+      define_method k do |d, o = {}|
+        unless (o = normalize_opts(o)) && o.send(:[], :"quiet_#{k}")
+          o[k].write wrap_ansi(
+            v, wrap_output(d, o[:output_prefix]), o
+          )
+        end
       end
     end
 

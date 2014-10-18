@@ -26,14 +26,20 @@ module Gofer
       end
     end
 
-    def write_stdio(out_err = {})
-      # _in is the output returned, _out is the STDOUT (FD).
-      out_err[:output] << out_err[:stderr_in] if out_err[:stderr_in]
-      out_err[:output] << out_err[:stdout_in] if out_err[:stdout_in]
-      stdio.stderr(out_err[:stderr_in], out_err[:opts]) if out_err[:stderr_in]
-      stdio.stdout(out_err[:stdout_in], out_err[:opts]) if out_err[:stdout_in]
-      out_err[:stderr_out] << out_err[:stderr_in] if out_err[:stderr_in] && out_err[:stderr_out]
-      out_err[:stdout_out] << out_err[:stdout_in] if out_err[:stdout_in] && out_err[:stdout_out]
+    # Do a triple for one.  Put it to stdio, put it on the final output and
+    # also make sure it makes it on that types individual "output".  That is...
+    # output is the string of stderr+stdout, then there is std{err,out} and
+    # then there is stdio which redirects where you want it to (IO, StringIO,
+    # IO<FD> or other, you decide there.)
+
+    [:stdout, :stderr].each do |k|
+      define_method "write_#{k}" do |o = {}|
+        if o[k] && o[k][:in]
+          stdio.send(k, o[k][:in], o[:opts])
+          o[k][:out] << o[k][:in] if o[k][:out]
+          o[:output] << o[k][:in]
+        end
+      end
     end
 
     def to_s

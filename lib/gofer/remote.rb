@@ -80,20 +80,24 @@ module Gofer
 
           c.on_extended_data do |_, t, d|
             next unless t == 1
-            write_stdio({
+            write_stderr({
+              :output => output,
               :opts => opts,
-              :stderr_in => d,
-              :stderr_out => stderr,
-              :output => output
+              :stderr => {
+                :in => d,
+                :out => stderr
+              }
             })
           end
 
           c.on_data do |_, d|
-            write_stdio({
-              :stdout_in => d,
-              :stdout_out => stdout,
+            write_stdout({
               :output => output,
-              :opts => opts
+              :opts => opts,
+              :stdout => {
+                :in => d,
+                :out => stdout
+              }
             })
           end
 

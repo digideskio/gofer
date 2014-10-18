@@ -24,20 +24,24 @@ module Gofer
 
         i.close
         while line = o.gets do
-          write_stdio({
+          write_stdout({
+            :output => output,
             :opts => opts,
-            :stdout_in => line,
-            :stdout_out => stdout,
-            :output => output
+            :stdout => {
+              :in => line,
+              :out => stdout
+            }
           })
         end
 
         while line = e.gets do
-          write_stdio({
+          write_stderr({
+            :output => output,
             :opts => opts,
-            :stderr_in => line,
-            :stderr_out => stderr,
-            :output => output
+            :stderr => {
+              :in => line,
+              :out => stderr
+            }
           })
         end
 
