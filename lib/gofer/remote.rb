@@ -61,7 +61,7 @@ module Gofer
     private
     def build_env(cmd, env)
       env.each do |k, v|
-        cmd = cmd.prepend(%Q{export #{k}="#{v}"; })
+        cmd = cmd.prepend(%Q{export #{k}=#{Shellwords.shellescape(v)}; })
       end
     cmd
     end

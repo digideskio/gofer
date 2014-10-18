@@ -49,7 +49,7 @@ module Gofer
     private
     def attach_cd(cmd, env = {})
       if env.has_key?("PWD")
-        cmd = cmd.prepend("cd #{env["PWD"]} && ")
+        cmd = cmd.prepend(%Q{cd #{Shellwords.shellescape(env["PWD"])} && })
       end
     cmd
     end

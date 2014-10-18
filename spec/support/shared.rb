@@ -26,18 +26,34 @@ shared_examples_for :run do
       expect(out.string.strip).to eq "/tmp"
     end
 
-    it "accepts environment variables" do
-      out = StringIO.new
-      @host.run "echo $RAILS_ENV", {
-        :stdout => out,
-        :quiet_stdout => false,
-        :env => {
-          :RAILS_ENV => :production
+    context "environment variables" do
+      specify "escape them" do
+        out = StringIO.new
+        @host.run "echo $FOO", {
+          :stdout => out,
+          :quiet_stdout => false,
+          :env => {
+            :FOO => %Q{hello world \\'"}
+          }
         }
-      }
 
-      expect(out.string.strip).to eq "production"
+        expect(out.string.strip). to eq %Q{hello world \\'"}
+      end
+
+      specify "it accepts them" do
+        out = StringIO.new
+        @host.run "echo $RAILS_ENV", {
+          :stdout => out,
+          :quiet_stdout => false,
+          :env => {
+            :RAILS_ENV => :production
+          }
+        }
+
+        expect(out.string.strip).to eq "production"
+      end
     end
+
 
     it "prints responses unless quiet is true" do
       expect($stdout).to receive(:write).with "stdout\n"
