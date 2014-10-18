@@ -5,6 +5,7 @@ module Gofer
       :reset => 0,
       :bold => 1,
       :dark => 2,
+      :mellow => 2,
       :faint => 2,
       :italic => 3,
       :underline => 4,
