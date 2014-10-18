@@ -26,20 +26,16 @@ module Gofer
       end
     end
 
-    # Do a triple for one.  Put it to stdio, put it on the final output and
-    # also make sure it makes it on that types individual "output".  That is...
-    # output is the string of stderr+stdout, then there is std{err,out} and
-    # then there is stdio which redirects where you want it to (IO, StringIO,
-    # IO<FD> or other, you decide there.)
+    def write_stderr(out)
+      write_stdio(
+        :stderr, out
+      )
+    end
 
-    [:stdout, :stderr].each do |k|
-      define_method "write_#{k}" do |o = {}|
-        if o[k] && o[k][:in]
-          stdio.send(k, o[k][:in], o[:opts])
-          o[k][:out] << o[k][:in] if o[k][:out]
-          o[:output] << o[k][:in]
-        end
-      end
+    def write_stdout(out)
+      write_stdio(
+        :stdout, out
+      )
     end
 
     def to_s
@@ -60,6 +56,15 @@ module Gofer
       opts[:capture_exit_status] = @capture_exit_status unless \
         opts.has_key?(:capture_exit_status)
     opts
+    end
+
+    private
+    def write_stdio(type, out)
+      if out[type] && out[type][:in]
+        stdio.send(type, out[type][:in], out[:opts])
+        out[type][:out] << out[type][:in] if out[type][:out]
+        out[:output] << out[type][:in]
+      end
     end
 
     private

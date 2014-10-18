@@ -38,12 +38,14 @@ module Gofer
       end
     end
 
+    private
     def lock
       (@mutex ||= Mutex.new).synchronize do
         yield
       end
     end
 
+    private
     def host_queue
       out = Queue.new and @hosts.each do |v|
         out << v
@@ -53,24 +55,41 @@ module Gofer
 
     private
     def threaded(meth, *args)
-      queue, threads, results, errors = host_queue, [], {}, {}
-      concurrency.times do |v|
-        threads << Thread.new do
-          until queue.empty? || ! (host = queue.pop(true) rescue nil)
-            begin
-              result = host.send(meth, *args)
-              lock { results[host] = result }
-            rescue Gofer::Error => error
-              lock do
-                errors[host] = error
-              end
-            end
+      results, errors = {}, {}
+      with_threadpool do |h|
+        begin
+          result = h.send(meth, *args)
+          lock do
+            results[h] = result
+          end
+        rescue Gofer::Error => error
+          lock do
+            errors[h] = error
           end
         end
       end
 
-      threads.map(&:join)
-      errors.size > 0 ? raise(Gofer::ClusterError.new(errors)) : results
+      if errors.size == 0
+        results
+      else
+        raise Gofer::ClusterError.new(errors)
+      end
+    end
+
+    private
+    def with_threadpool(&block)
+      queue, threads = host_queue, []
+      concurrency.times do |v|
+        threads << Thread.new do
+          until queue.empty? || ! (host = queue.pop(true) rescue nil)
+            block.call(host)
+          end
+        end
+      end
+
+      threads.map(
+        &:join
+      )
     end
   end
 end
