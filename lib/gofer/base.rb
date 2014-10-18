@@ -47,6 +47,14 @@ module Gofer
     end
 
     private
+    def attach_cd(cmd, env = {})
+      if env.has_key?("PWD")
+        cmd = cmd.prepend("cd #{env["PWD"]} && ")
+      end
+    cmd
+    end
+
+    private
     def normalize_opts(opts = {})
       opts[:timeout] = @timeout unless opts.has_key?(:timeout)
       opts[:env] = @env.merge(opts[:env] || {}).inject({}) do |h, (k, v)|

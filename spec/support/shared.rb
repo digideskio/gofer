@@ -13,6 +13,19 @@ shared_examples_for :run do
       it("captures stdout") { expect(@response.stdout.strip).to eq "stdout" }
     end
 
+    it "changes directories if requested to through :PWD" do
+      out = StringIO.new
+      @host.run "echo $(pwd)", {
+        :stdout => out,
+        :quiet_stdout => false,
+        :env => {
+          :PWD => "/tmp"
+        }
+      }
+
+      expect(out.string.strip).to eq "/tmp"
+    end
+
     it "accepts environment variables" do
       out = StringIO.new
       @host.run "echo $RAILS_ENV", {

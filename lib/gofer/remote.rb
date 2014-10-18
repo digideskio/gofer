@@ -68,14 +68,15 @@ module Gofer
 
     private
     def ssh_execute(cmd, opts = {})
+      opts = normalize_opts(opts)
       exit_status = 0
       stdout = ""
       stderr = ""
       output = ""
 
-      opts = normalize_opts(opts)
+      cmd = build_env(attach_cd(cmd, opts[:env]), opts[:env])
       ssh.open_channel do |c|
-        c.exec(build_env(cmd, opts[:env])) do |_, s|
+        c.exec(cmd) do |_, s|
           raise "SSH Channnel: Couldn't execute command #{command}" unless s
 
           c.on_extended_data do |_, t, d|

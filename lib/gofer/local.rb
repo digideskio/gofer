@@ -10,14 +10,14 @@ module Gofer
       super
     end
 
-    def run(command, opts = {})
+    def run(cmd, opts = {})
       exit_status = 0
       stdout = ""
       stderr = ""
       output = ""
 
       opts = normalize_opts(opts)
-      Open3.popen3(opts[:env], command) do |i, o, e, t|
+      Open3.popen3(opts[:env], attach_cd(cmd, opts[:env])) do |i, o, e, t|
         if opts[:stdin]
           i.puts opts[:stdin]
         end
@@ -52,7 +52,7 @@ module Gofer
 
       # Just mock out what Gofer normally mocks out.
       out = Gofer::Response.new(stdout, stderr, output, exit_status)
-      raise_if_bad_exit(command, out, opts)
+      raise_if_bad_exit(cmd, out, opts)
     out
     end
   end
