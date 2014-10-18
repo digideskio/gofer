@@ -27,12 +27,12 @@ module Gofer
 
     def write_stdio(out_err = {})
       # _in is the output returned, _out is the STDOUT (FD).
-      out_error[:output] << out_error[:stderr_in] if out_error[:stderr_in]
-      out_error[:output] << out_error[:stdout_in] if out_error[:stdout_in]
-      stdio.stderr(out_error[:stderr_in], out_error[:opts]) if out_error[:stderr_in]
-      stdio.stdout(out_error[:stdout_in], out_error[:opts]) if out_error[:stdout_in]
-      out_error[:stderr_out] << out_error[:stderr_in] if out_error[:stderr_in] && out_error[:stderr_out]
-      out_error[:stdout_out] << out_error[:stdout_in] if out_error[:stdout_in] && out_error[:stdout_out]
+      out_err[:output] << out_err[:stderr_in] if out_err[:stderr_in]
+      out_err[:output] << out_err[:stdout_in] if out_err[:stdout_in]
+      stdio.stderr(out_err[:stderr_in], out_err[:opts]) if out_err[:stderr_in]
+      stdio.stdout(out_err[:stdout_in], out_err[:opts]) if out_err[:stdout_in]
+      out_err[:stderr_out] << out_err[:stderr_in] if out_err[:stderr_in] && out_err[:stderr_out]
+      out_err[:stdout_out] << out_err[:stdout_in] if out_err[:stdout_in] && out_err[:stdout_out]
     end
 
     def to_s
