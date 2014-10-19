@@ -1,11 +1,8 @@
 module Gofer
   class Base
     attr_reader :hostname, :username
-
     KNOWN_OPTS = [
-      :stderr, :stdout, :stdio, :ansi,
-      :output_prefix, :capture_exit_status, :quiet_stdout,
-      :quiet_stderr, :timeout, :env
+      :capture_exit_status, :env, :timeout, :stdio
     ]
 
     def initialize(opts = {})
@@ -14,16 +11,8 @@ module Gofer
       @timeout = opts[:timeout] || 12
       @env = opts[:env] || {}
 
-      @stdio_opts[:stdout] = opts[:stdout]
-      @stdio_opts[:quiet_stdout] = opts[:quiet_stdout]
-      @stdio_opts[:output_prefix] = opts[:output_prefix]
-      @stdio_opts[:quiet_stderr] = opts[:quiet_stderr]
-      @stdio_opts[:stderr] = opts[:stderr]
-      @stdio_opts[:ansi] = opts[:ansi]
-
-      @ssh_opts = opts.delete_if do |k, v|
-        KNOWN_OPTS.include?(k)
-      end
+      Stdio::KNOWN_OPTS.each { |k| @stdio_opts[k] = opts[k] }
+      @ssh_opts = opts.delete_if { |k, v| Stdio::KNOWN_OPTS.include?(k) || KNOWN_OPTS.include?(k) }
     end
 
     def write_stderr(out)

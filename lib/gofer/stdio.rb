@@ -2,17 +2,20 @@ require "gofer/ansi"
 
 module Gofer
   class Stdio
-    KNOWN_OPTIONS = [
+    KNOWN_OPTS = [
       :ansi, :quiet_stdout,
       :quiet_stderr, :output_prefix,
       :stderr, :stdout
     ]
 
     def initialize(opts)
-      @opts = opts
       @prefix_next_line = true
-      @opts[:stdout] ||= $stdout
-      @opts[:stderr] ||= $stderr
+      @opts = opts
+
+      @opts[:stdout] ||= $stdout; @opts[:stderr] ||= $stderr
+      unless (bad = @opts.keys - KNOWN_OPTS).empty?
+        raise ArgumentError, "invalid opts on @opts #{bad}"
+      end
     end
 
     { :stdout => :green, :stderr => :red }.each do |k ,v|
@@ -48,10 +51,9 @@ module Gofer
 
     private
     def normalize_opts(opts)
-      KNOWN_OPTIONS.each do |k|
-        opts[k] = @opts[k] unless opts.has_key?(k)
-      end
-    opts
+      opts.merge_if(
+        @opts
+      )
     end
   end
 end
