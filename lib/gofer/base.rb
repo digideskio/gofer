@@ -56,13 +56,10 @@ module Gofer
 
     private
     def normalize_opts(opts = {})
-      opts[:timeout] = @timeout unless opts.has_key?(:timeout)
+      opts = opts.merge_if(:capture_exit_status => @capture_exit_status, :timeout => @timeout)
       opts[:env] = @env.merge(opts[:env] || {}).inject({}) do |h, (k, v)|
         h.update(k.to_s => v.to_s)
       end
-
-      opts[:capture_exit_status] = @capture_exit_status unless \
-        opts.has_key?(:capture_exit_status)
     opts
     end
 

@@ -1,3 +1,4 @@
+require "gofer/extensions/hash"
 require "gofer/version"
 require "gofer/stdio"
 require "gofer/remote"
