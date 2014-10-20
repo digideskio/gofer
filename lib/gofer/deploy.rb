@@ -72,7 +72,8 @@ module Gofer
     def output_debug(cmd, opts)
       if config[:deploy_output_level] >= 2
         opts[:stderr].write Ansi.mellow(%Q{from #{Rake.current_task || "none"} })
-        opts[:stderr].write Ansi.yellow(cmd.chomp("\s"))
+        opts[:stderr].write Ansi.mellow("run ") + Ansi.yellow(cmd.chomp("\s"))
+        opts[:stderr].write Ansi.mellow(" on ") + Ansi.yellow(opts[:server])
 
         # So we don't flood your terminal.
         if opts[:env] && opts[:env].size > 0
