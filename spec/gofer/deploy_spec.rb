@@ -12,7 +12,7 @@ end
 describe Gofer::Deploy do
   before :all do
     ENV["DEPLOY_CONFIG"] = File.expand_path("../../support/deploy.yml", __FILE__)
-    @deploy = Gofer::Deploy.new(:server => :mock)
+    @deploy = Gofer::Deploy.new(:server => :mock, :skip_debug => true)
     @deploy.config[:deploy_servers][:mock] = \
       MockRemote.new
   end
