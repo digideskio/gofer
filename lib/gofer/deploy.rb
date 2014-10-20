@@ -103,14 +103,13 @@ module Gofer
       })
     end
 
-    # This shit is pretty damn expensive but what can I do if you expect to
-    # be able to configure everything 3 different ways so that your code can be
-    # super simple at the end of the day.
+    def base_normalized_opts
+      @base_normalized_opts ||= \
+        { :env => config[:deploy_env] }.elegant_merge(@opts)
+    end
 
     def normalize_opts(opts)
-      othr = { :env => config[:deploy_env] }.elegant_merge(@opts)
-      opts = othr.elegant_merge(opts)
-
+      opts = base_normalized_opts.elegant_merge(opts)
       opts.merge_if({
         :server  => config[:default_server],
         :stdout  => $stdout,
