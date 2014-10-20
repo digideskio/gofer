@@ -5,7 +5,8 @@ require "gofer"
 
 module Gofer
   class Deploy
-    BASE_RSYNC_CMD = "rsync -av --filter=':- .deploy.ignore' --filter=':- .gitignore'"
+    BASE_RSYNC_CMD  = "rsync -av --filter=':- .deploy.ignore' --filter=':- .gitignore'"
+    BASE_DEBUG_LINE = "run %s from %s on %s"
     DEFAULTS = {
       :deploy_output_level => 2,
       :deploy_env => {},
@@ -75,9 +76,12 @@ module Gofer
     private
     def output_debug(cmd, opts)
       if ! opts[:skip_debug] && config[:deploy_output_level] >= 2
-        opts[:stderr].write Ansi.mellow(%Q{from #{Rake.current_task || "none"} })
-        opts[:stderr].write Ansi.yellow(%Q{run #{cmd.chomp("\s")} })
-        opts[:stderr].write Ansi.mellow(%Q{on #{opts[:server]}})
+        opts[:stderr].write BASE_DEBUG_LINE % [
+          Ansi.yellow(cmd.chomp("\s")),
+          Ansi.yellow(Rake.current_task || "none"),
+          Ansi.yellow(opts[:server])
+        ]
+
         output_env_debug(opts)
         opts[:stdout].write "\n"
       end
@@ -86,14 +90,9 @@ module Gofer
     private
     def output_env_debug(opts)
       if opts[:env] && opts[:env].size > 0
-        opts[:stderr].write Ansi.yellow(" with env ")
-        opts[:env].map do |k, v|
-          unless v.nil? || v.empty?
-            opts[:stderr].write(
-              Ansi.yellow("#{k}=#{v} ")
-            )
-          end
-        end
+        env = opts[:env].dup.delete_if { |k, v| v.nil? || v.empty? }
+        env = env.map { |k, v| "#{k}=#{v}" }.join("\s")
+        opts[:stderr].write " with env #{Ansi.yellow(env)}"
       end
     end
 

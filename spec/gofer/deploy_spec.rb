@@ -22,7 +22,7 @@ describe Gofer::Deploy do
     @deploy.config[:deploy_output_level] = 10
     out1, out2 = StringIO.new, StringIO.new
     @deploy.run("echo hello", :stdout => out1, :stderr => out2, :skip_debug => false)
-    expect(Gofer::Ansi.strip(out2.string)).to match "from none run echo hello on mock@mockhost with env"
+    expect(Gofer::Ansi.strip(out2.string)).to match "run echo hello from none on mock@mockhost with env"
     @deploy.config[:deploy_output_level] = old_opl
   end
 
