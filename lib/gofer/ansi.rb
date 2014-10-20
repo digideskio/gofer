@@ -21,6 +21,10 @@ module Gofer
       :white => 37
     }
 
+    def self.strip(str)
+      str.gsub(/\e\[(?:\d+)(?:;\d+)?m/, "")
+    end
+
     def self.wrap(code, str)
       "\e[#{COLORS[code] || code}m#{str}\e[#{COLORS[:clear]}m"
     end
