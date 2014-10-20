@@ -117,7 +117,8 @@ module Gofer
         },
 
         :env => {
-          :PWD => config[config[:default_pwd]]
+          :PWD => (opts[:server] == :localhost ? nil : \
+            config[config[:default_pwd]])
         },
 
         :gofer => {
