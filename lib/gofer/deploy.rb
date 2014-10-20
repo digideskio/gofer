@@ -35,8 +35,8 @@ module Gofer
         opts[:server] = config[:deploy_servers][opts[:server]]
       end
 
-      output_debug(cmd, opts) unless opts[:skip_debug]
-      ret = opts[:server].run(cmd, gofer) # Capture it so we can out.
+      output_debug(cmd, opts)
+      ret = opts[:server].run(cmd, gofer)
       exit(ret.exit_status) if ! opts[:capture] && ret.exit_status != 0
     ret
     end
@@ -74,7 +74,7 @@ module Gofer
 
     private
     def output_debug(cmd, opts)
-      if config[:deploy_output_level] >= 2
+      if ! opts[:skip_debug] && config[:deploy_output_level] >= 2
         opts[:stderr].write Ansi.mellow(%Q{from #{Rake.current_task || "none"} })
         opts[:stderr].write Ansi.mellow("run ") + Ansi.yellow(cmd.chomp("\s"))
         opts[:stderr].write Ansi.mellow(" on ") + Ansi.yellow(opts[:server])
