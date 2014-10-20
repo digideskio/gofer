@@ -3,6 +3,10 @@ class MockRemote
   def run(cmd, opts)
     Gofer::Response.new(cmd, "", cmd, 0)
   end
+
+  def to_s
+    "mock@mockhost"
+  end
 end
 
 describe Gofer::Deploy do
