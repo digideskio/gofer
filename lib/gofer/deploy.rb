@@ -31,7 +31,7 @@ module Gofer
       cmd = attach_argv(cmd, opts[:argv])
       gofer = gofer_opts(opts)
 
-      output_debug(cmd, opts)
+      output_debug(cmd, opts) unless opts[:skip_debug]
       ret = config[:deploy_servers][opts[:server]].run(cmd, gofer)
       exit(ret.exit_status) if ! opts[:capture] && ret.exit_status != 0
     ret
