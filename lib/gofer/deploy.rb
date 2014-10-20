@@ -31,8 +31,12 @@ module Gofer
       cmd = attach_argv(cmd, opts[:argv])
       gofer = gofer_opts(opts)
 
+      unless opts[:server].is_a?(Remote) || opts[:server].is_a?(Local)
+        opts[:server] = config[:deploy_servers][opts[:server]]
+      end
+
       output_debug(cmd, opts) unless opts[:skip_debug]
-      ret = config[:deploy_servers][opts[:server]].run(cmd, gofer)
+      ret = opts[:server].run(cmd, gofer) # Capture it so we can out.
       exit(ret.exit_status) if ! opts[:capture] && ret.exit_status != 0
     ret
     end
