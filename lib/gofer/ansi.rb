@@ -1,5 +1,6 @@
 module Gofer
   class Ansi
+    ANSI_ESCAPE = "\e[%dm"
     COLORS = {
       :clear => 0,
       :reset => 0,
@@ -25,8 +26,12 @@ module Gofer
       str.gsub(/\e\[(?:\d+)(?:;\d+)?m/, "")
     end
 
-    def self.wrap(code, str)
-      "\e[#{COLORS[code] || code}m#{str}\e[#{COLORS[:clear]}m"
+    def self.escape(color)
+      ANSI_ESCAPE % COLORS[color]
+    end
+
+    def self.wrap(color, str)
+      "#{escape(color)}#{str}#{escape(:reset)}"
     end
 
     COLORS.each do |k, v|
