@@ -76,25 +76,28 @@ module Gofer
     def output_debug(cmd, opts)
       if ! opts[:skip_debug] && config[:deploy_output_level] >= 2
         opts[:stderr].write Ansi.mellow(%Q{from #{Rake.current_task || "none"} })
-        opts[:stderr].write Ansi.mellow("run ") + Ansi.yellow(cmd.chomp("\s"))
-        opts[:stderr].write Ansi.mellow(" on ") + Ansi.yellow(opts[:server])
-
-        # So we don't flood your terminal.
-        if opts[:env] && opts[:env].size > 0
-          opts[:stderr].write Ansi.mellow(" with env ")
-          opts[:env].map do |k, v|
-            unless v.nil? || v.empty?
-              opts[:stderr].write(
-                Ansi.yellow("#{k}=#{v} ")
-              )
-            end
-          end
-        end
-
+        opts[:stderr].write Ansi.yellow(%Q{run #{cmd.chomp("\s")} })
+        opts[:stderr].write Ansi.mellow(%Q{on #{opts[:server]}})
+        output_env_debug(opts)
         opts[:stdout].write "\n"
       end
     end
 
+    private
+    def output_env_debug(opts)
+      if opts[:env] && opts[:env].size > 0
+        opts[:stderr].write Ansi.yellow(" with env ")
+        opts[:env].map do |k, v|
+          unless v.nil? || v.empty?
+            opts[:stderr].write(
+              Ansi.yellow("#{k}=#{v} ")
+            )
+          end
+        end
+      end
+    end
+
+    private
     def gofer_opts(opts)
       opts[:gofer].merge({
         :stderr => opts[:stderr],
@@ -103,11 +106,13 @@ module Gofer
       })
     end
 
+    private
     def base_normalized_opts
       @base_normalized_opts ||= \
         { :env => config[:deploy_env] }.elegant_merge(@opts)
     end
 
+    private
     def normalize_opts(opts)
       opts = base_normalized_opts.elegant_merge(opts)
       opts.merge_if({
