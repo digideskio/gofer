@@ -201,6 +201,49 @@ host1.run("echo $VAR1; echo $VAR2", :env => { :VAR2 => :val })
 host2.run("echo $VAR1; echo $VAR2", :env => { :VAR2 => :val })
 ```
 
+### Gofer::Deploy
+
+`Gofer::Deploy` is a helper that loads a deploy.yml, normalizes it and then
+helps you output useful information to the terminal.
+
+```ruby
+Gofer::Deploy.new.run("echo hello", :server => :app, :argv => { :n => true })
+# => "from none echo -n hello"
+```
+
+#### deploy.yml
+
+```yml
+default_server: app
+default_pwd: deploy_folder
+deploy_output_level: 2
+app: "www"
+
+deploy_env:
+  RAILS_ENV: production
+
+deploy_servers:
+  root: host
+  app:  host
+
+
+# You can place anything else you would like in your deploy.yml here, and it
+# won't affect the deployer, you can add anything, the above are just values
+# that we expect by default.
+```
+#### Known Opts
+
+```ruby
+:env # Accepted on both #run and #new
+:gofer # options for Gofer::{Remote,Local}
+:server # The server from :deploy_servers (symbol key)
+:argv # Any (--|-) arguments (only useful when they are config args)
+:env # run :env > new :env > :deploy_env (merged into each)
+:capture # Prevent exit.
+:stdout # The stdout
+:stderr # The stderr
+```
+
 ## Testing
 
 If you are looking for the true quick and dirty of how to get it up without
