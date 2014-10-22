@@ -45,11 +45,10 @@ module Gofer
 
     private
     def normalize_opts(opts = {})
-      opts = opts.merge_if(:capture_exit_status => @capture_exit_status, :timeout => @timeout)
-      opts[:env] = @env.merge(opts[:env] || {}).inject({}) do |h, (k, v)|
-        h.update(k.to_s => v.to_s)
-      end
-    opts
+      opts[:env] = (opts[:env] || {}).stringize
+      opts.merge_if({
+        :capture_exit_status => @capture_exit_status, :timeout => @timeout
+      })
     end
 
     private

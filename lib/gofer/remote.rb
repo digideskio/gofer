@@ -60,6 +60,7 @@ module Gofer
 
     private
     def build_env(cmd, env)
+      return cmd if env.empty?
       env.each do |k, v|
         cmd = cmd.prepend(%Q{export #{k}=#{Shellwords.shellescape(v)}; })
       end

@@ -12,6 +12,12 @@ class Hash
     end
   end
 
+  def stringize
+    inject({}) do |h, (k, v)|
+      h.update(k.to_s => v.to_s)
+    end
+  end
+
   def merge_if(hash)
     self.merge(hash) do |k, ov, nv|
       if nv.is_a?(Hash) && ov.is_a?(Hash)

@@ -59,7 +59,7 @@ module Gofer
     def build_argv(hash)
       return "" if hash.nil? || hash.empty?
       hash.delete_if { |k, v| v == false }
-      out = hash.inject("") do |str, (k, v)|
+      hash.stringize.inject("") do |str, (k, v)|
         str << (k.size == 1 ? " -#{k}" : " --#{k}")
         unless v.nil? || v.empty? || v == true
           str << " #{Shellwords.shellescape(v)}"
