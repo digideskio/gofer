@@ -29,12 +29,12 @@ describe Gofer::Deploy do
   context "argv" do
     specify "attach them where %{argv} is specificed" do
       ret = @deploy.run("hello world %{argv}", :argv => { :great => :day })
-      expect(ret.stdout).to eq "hello world --great day"
+      expect(ret.cmd).to eq "hello world --great day"
     end
 
     specify "attach argv early if no %{argv}" do
       ret = @deploy.run("hello world", :argv => { :great => :day })
-      expect(ret.stdout).to eq "hello --great day world"
+      expect(ret.cmd).to eq "hello --great day world"
     end
   end
 
@@ -56,7 +56,7 @@ describe Gofer::Deploy do
         :pry => true,
       })
 
-      expect(ret.stdout).to eq "foobar"
+      expect(ret.response).to eq "foobar"
     end
   end
 
