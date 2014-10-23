@@ -1,7 +1,7 @@
 require "fileutils"
 require "tmpdir"
 
-class TempStdio < Gofer::Stdio
+class TempStdio < Gofer::Helpers::Stdio
   def stdout(line, opts)
     normalize_opts(opts)
     if opts.size > 0

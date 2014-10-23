@@ -1,4 +1,5 @@
-require "gofer/cluster_error"
+require "gofer/cluster/error"
+require "gofer/remote"
 require "thread"
 
 module Gofer
@@ -8,6 +9,9 @@ module Gofer
 
     def initialize(parties = [], opts = {})
       @max_concurrency = opts[:max_concurrency].to_s.to_i
+      @mutex = Mutex.new
+      @hosts = []
+
       parties.each do |i|
         self << i
       end
@@ -17,68 +21,74 @@ module Gofer
       if ! @max_concurrency || @max_concurrency == 0
         hosts.length
       else
-        r = [@max_concurrency, @hosts.length].min
-        r > 0 ? r : hosts.length
+        min = [@max_concurrency, @hosts.length].min
+        min > 0 ? min : hosts.length
       end
     end
 
     def <<(other)
-      @hosts ||= []
-      case other
-        when Host then @hosts << other
-        when Cluster then other.hosts.each do |h|
-          self << h
+      case true
+      when other.is_a?(Remote)
+        @hosts << other
+
+      when other.is_?(Cluster)
+        other.hosts.each do |host|
+          @hosts << host
         end
       end
     end
 
-    [:run, :upload, :read, :write].each do |k|
-      define_method k do |*a|
-        threaded(k, *a)
+    [:run, :upload, :read, :write].each do |key|
+      define_method key do |*args|
+        threaded(key, *args)
       end
     end
 
     private
     def lock
-      (@mutex ||= Mutex.new).synchronize do
+      @mutex.synchronize do
         yield
       end
     end
 
     private
     def host_queue
-      out = Queue.new and @hosts.each do |v|
+      out = Queue.new
+
+      @hosts.each do |v|
         out << v
       end
-    out
+
+      out
     end
 
     private
     def threaded(meth, *args)
-      results, errors = {}, {}
-      with_threadpool do |h|
+      results = {}
+      errors  = {}
+
+      with_threadpool do |host|
         begin
-          result = h.send(meth, *args)
+          result = host.send(meth, *args)
+
           lock do
-            results[h] = result
+            results[host] = result
           end
         rescue Gofer::Error => error
           lock do
-            errors[h] = error
+            errors[host] = error
           end
         end
       end
 
-      if errors.size == 0
-        results
-      else
-        raise Gofer::ClusterError.new(errors)
-      end
+      errors.size == 0 ? results : raise(Gofer::Cluster::Error.new(errors))
     end
 
     private
     def with_threadpool(&block)
-      queue, threads = host_queue, []
+      queue = host_queue
+      threads = []
+
       concurrency.times do |v|
         threads << Thread.new do
           until queue.empty? || ! (host = queue.pop(true) rescue nil)
@@ -87,9 +97,7 @@ module Gofer
         end
       end
 
-      threads.map(
-        &:join
-      )
+      threads.map(&:join)
     end
   end
 end

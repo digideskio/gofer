@@ -6,7 +6,8 @@ require "open3"
 module Gofer
   class Local < Base
     def initialize(opts = {})
-      @username, @hostname = ENV["USER"], "localhost"
+      @username = ENV["USER"]
+      @hostname = "localhost"
       super
     end
 
@@ -17,6 +18,7 @@ module Gofer
       output = ""
 
       opts = normalize_opts(opts)
+      # TODO: Expand the single letter variables when you have time.
       Open3.popen3(opts[:env], attach_cd(cmd, opts[:env])) do |i, o, e, t|
         if opts[:stdin]
           i.puts opts[:stdin]

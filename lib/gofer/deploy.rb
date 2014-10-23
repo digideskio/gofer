@@ -1,131 +1,129 @@
-require "gofer/deploy/extensions/string"
-require "gofer/deploy/extensions/rake"
+require "gofer/extensions/string"
+require "gofer/extensions/rake"
+
+require "gofer/deploy/helpers"
 require "gofer/deploy/configuration"
 require "gofer/deploy/debug"
+require "gofer/remote"
+require "gofer/local"
 require "yaml"
-require "gofer"
 
-module Gofer
-  class Deploy
-    BASE_RSYNC_CMD  = "rsync -av --filter=':- .deploy.ignore' --filter=':- .gitignore'"
-    DEFAULTS = {
-      :deploy_output_level => 2,
-      :deploy_env => {},
-      :cmd => {
-        :rsync => {
-          :no_del => BASE_RSYNC_CMD,
-             :del => BASE_RSYNC_CMD + " --delete --delete-excluded"
-        }
+class Gofer::Deploy
+  include Helpers
+
+  BASE_RSYNC_CMD  = "rsync -av --filter=':- .deploy.ignore' --filter=':- .gitignore'"
+  DEFAULTS = {
+    :deploy_output_level => 2,
+    :deploy_env => {},
+    :cmd => {
+      :rsync => {
+        :no_del => BASE_RSYNC_CMD,
+           :del => BASE_RSYNC_CMD + " --delete --delete-excluded"
       }
-    }.freeze
+    }
+  }.freeze
 
-    def initialize(opts = {})
-      @opts = opts
-    end
+  def initialize(opts = {})
+    @opts = opts
+  end
 
-    def config
-      @config ||= \
-        Configuration.new.read
-    end
+  def config
+    @config ||= Configuration.new.read
+  end
 
-    def base_normalized_opts
-      @base_normalized_opts ||= \
-        { :env => config[:deploy_env] }.elegant_merge(@opts)
-    end
+  def base_normalized_opts
+    @base_normalized_opts ||= { :env => config[:deploy_env] }.elegant_merge!(@opts)
+  end
 
-    def run(cmd, opts = {})
-      opts, cmd = normalize_opts_and_cmd(opts, cmd)
-      res = opts[:server].run(cmd, opts[:gofer])
-      Debug.new(res, cmd, opts, config).printit.exit_ondemand!
-    end
+  def run(cmd, opts = {})
+    opts = normalize_opts(opts)
+    cmd = attach_argv(cmd, opts[:argv]) if opts[:argv]
+    debug = Debug.new(cmd, opts, config)
 
-    def attach_argv(cmd, argv)
-      argv = build_argv(argv) if argv.is_a?(Hash)
-      return cmd if argv.nil? || argv.empty?
+    debug.print
+    debug.response = opts[:server].run(cmd, opts[:gofer])
+    debug.exit_if_asked
+  end
 
-      out = cmd.rpl(:argv, argv)
-      if out == cmd && out = out.split("\s")
-        out.each_with_index do |k, i|
-          next if k.nil? || k.empty?
-          out[i] << " #{argv}"
-          break
-        end
+  def attach_argv(cmd, argv)
+    argv = build_argv(argv) if argv.is_a?(Hash)
+    out = cmd.rpl(:argv, argv)
 
-        out = out.join("\s")
+    if out == cmd && out = out.split("\s")
+      out.each_with_index do |k, i|
+        next if k.nil? || k.empty?
+        out[i] << " #{argv}"
+        break
       end
-    out
-    end
 
-    def build_argv(hash)
-      return "" if hash.nil? || hash.empty?
-      hash.delete_if { |k, v| v == false }
-      hash.stringize.inject("") do |str, (k, v)|
-        str << (k.size == 1 ? " -#{k}" : " --#{k}")
-        unless v.nil? || v.empty? || v == true
-          str << " #{Shellwords.shellescape(v)}"
-        end
-      str
-      end. \
-      strip
+      out = out.join("\s")
     end
+  out
+  end
 
-    private
-    def normalize_opts_and_cmd(opts, cmd)
-      [
-        (opts = normalize_opts(opts)),
-        attach_argv(cmd, opts[:argv])
-      ]
-    end
+  def build_argv(hash)
+    return "" if hash.nil? || hash.empty?
 
-    private
-    def set_gofer(opts)
-      opts[:gofer] = opts[:gofer].merge_if({
-        :stderr => opts[:stderr],
-        :env => opts[:env],
-        :stdout => opts[:stdout]
-      })
+    hash.delete_if { |key, value| value == false }.stringize.inject("") do |str, (key, value)|
+      key = key.size == 1 ? " -#{key}" : " --#{key}"
+
+      unless value.nil? || value.empty? || value == true
+        value = Shellwords.shellescape(value)
+      end
+
+      "#{str} #{key} #{value} "
+    end. \
+    strip
+  end
+
+  private
+  def set_gofer(opts)
+    opts[:gofer].merge_if!({
+      :stderr => opts[:stderr],
+      :env => opts[:env],
+      :stdout => opts[:stdout]
+    })
+
     opts
-    end
+  end
 
-    private
-    def set_server(opts)
-      unless opts[:server].is_a?(Remote) || opts[:server].is_a?(Local)
-        opts[:server] = config[:deploy_servers][opts[:server]]
-      end
+  def get_server(server = nil)
+    server ||= config[:default_server]
+    server.is_a?(Gofer::Remote) || server.is_a?(Gofer::Local) ? server : config[:deploy_servers][server]
+  end
+
+  private
+  def set_server(opts)
+    opts[:server] = get_server(opts[:server])
     opts
-    end
+  end
 
-    private
-    def normalize_opts(opts)
-      opts = base_normalized_opts.elegant_merge(opts)
-      set_gofer(set_server(opts.merge_if({
-        :server  => config[:default_server],
-        :stdout  => $stdout,
-        :stderr  => $stderr,
-        :capture => false  ,
+  private
+  def normalize_opts(opts)
+    opts = base_normalized_opts.dup.elegant_merge!(opts)
+    set_gofer(set_server(opts.merge_if!({
+      :server  => config[:default_server],
+      :stdout  => $stdout,
+      :stderr  => $stderr,
+      :capture => false  ,
 
-        :argv => {
+      :env => {
+        :PWD => (opts[:server] == :localhost ? nil : \
+          config[config[:default_pwd]])
+      },
 
-        },
+      :gofer => {
+        :capture_exit_status => true,
+        :quiet_stdout => config[:deploy_output_level]  < 1,
+        :quiet_stderr => config[:deploy_output_level] == 0,
+        :ansi => true
+      }
+    })))
+  end
 
-        :env => {
-          :PWD => (opts[:server] == :localhost ? nil : \
-            config[config[:default_pwd]])
-        },
-
-        :gofer => {
-          :capture_exit_status => true,
-          :quiet_stdout => config[:deploy_output_level]  < 1,
-          :quiet_stderr => config[:deploy_output_level] == 0,
-          :ansi => true
-        }
-      })))
-    end
-
-    class << self
-      def globalize_ssh(opts = {})
-        Object.send(:define_method, :ssh) { @ssh ||= Gofer::Deploy.new(opts) }
-      end
+  class << self
+    def globalize_ssh(opts = {})
+      Object.send(:define_method, :ssh) { @ssh ||= Gofer::Deploy.new(opts) }
     end
   end
 end

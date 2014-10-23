@@ -1,30 +1,23 @@
 module Gofer
   class Base
+    KNOWN_OPTS = [ :capture_exit_status, :env, :timeout, :stdio ]
     attr_reader :hostname, :username
-    KNOWN_OPTS = [
-      :capture_exit_status, :env, :timeout, :stdio
-    ]
 
     def initialize(opts = {})
       @capture_exit_status = opts[:capture_exit_status]
-      @stdio_class, @stdio_opts = opts[:stdio] || Stdio, {}
+      @stdio_class = opts[:stdio] || Helpers::Stdio
       @timeout = opts[:timeout] || 12
       @env = opts[:env] || {}
 
-      Stdio::KNOWN_OPTS.each { |k| @stdio_opts[k] = opts[k] }
-      @ssh_opts = opts.delete_if { |k, v| Stdio::KNOWN_OPTS.include?(k) || KNOWN_OPTS.include?(k) }
+      create_ssh_opts(opts)
+      create_stdio_opts(opts)
     end
 
-    def write_stderr(out)
-      write_stdio(
-        :stderr, out
-      )
-    end
-
-    def write_stdout(out)
-      write_stdio(
-        :stdout, out
-      )
+    # write_stdout, write_stderr
+    [:stderr, :stdout].each do |key|
+      define_method "write_#{key}" do |str|
+        write_stdio(key, str)
+      end
     end
 
     def to_s
@@ -36,9 +29,24 @@ module Gofer
     end
 
     private
+    def create_ssh_opts(opts)
+      @ssh_opts = opts.dup.delete_if do |key, value|
+        Helpers::Stdio::KNOWN_OPTS.include?(key) || KNOWN_OPTS.include?(key)
+      end
+    end
+
+    private
+    def create_stdio_opts(opts)
+      @stdio_opts = Helpers::Stdio::KNOWN_OPTS.inject({}) do |hash, key|
+        hash[key] = opts[key]
+        hash
+      end
+    end
+
+    private
     def attach_cd(cmd, env = {})
       if env.has_key?("PWD") && ! env["PWD"].nil? && ! env["PWD"].empty?
-        cmd = cmd.prepend(%Q{cd #{Shellwords.shellescape(env["PWD"])} && })
+        cmd = "cd #{Shellwords.shellescape(env["PWD"])} && #{cmd}"
       end
     cmd
     end
@@ -46,8 +54,9 @@ module Gofer
     private
     def normalize_opts(opts = {})
       opts[:env] = (opts[:env] || {}).stringize
-      opts.merge_if({
-        :capture_exit_status => @capture_exit_status, :timeout => @timeout
+      opts.merge_if!({
+        :timeout => @timeout,
+        :capture_exit_status => @capture_exit_status
       })
     end
 
@@ -59,6 +68,7 @@ module Gofer
         out[:output] << out[type][:in]
       end
     end
+
 
     private
     def raise_if_bad_exit(command, out, opts)

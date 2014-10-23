@@ -35,19 +35,22 @@ module Gofer
         @config = normalize_deploy_servers(DEFAULTS.merge(read_config))
         @config = @config.inject({}) do |h, (k, v)|
           h.update(normalize_config_value(k, v, @config["app"]))
-        end. \
-        symbolize_keys
-        self
+        end
+
+        # Chainit.
+        return self
       end
 
       private
-      def normalize_deploy_servers(out)
-        localhost = { "localhost" => Gofer::Local.new }
-        out["deploy_servers"] ||= {}
-        out["deploy_servers"] = out["deploy_servers"].inject(localhost) do |h, (k, v)|
-          h.update(k => Gofer::Remote.new(v, k))
+      def normalize_deploy_servers(config)
+        localhost = { :localhost => Gofer::Local.new }
+        config["deploy_servers"] ||= {}
+        config["deploy_servers"] = config["deploy_servers"].inject(localhost) do |hash, (key, value)|
+          hash[key.to_sym] = Gofer::Remote.new(value, key)
+          hash
         end
-      out
+
+        config
       end
 
       private
@@ -61,7 +64,7 @@ module Gofer
         end
 
         return {
-          k => v
+          (k.is_a?(String) ? k.to_sym : k) => v
         }
       end
 

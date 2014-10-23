@@ -1,39 +1,40 @@
+require "gofer/helpers/stdio"
+require "gofer/extensions/hash"
+require "gofer/response"
+require "gofer/base"
+require "gofer/error"
+
+require "shellwords"
 require "net/ssh"
 require "tempfile"
-require "gofer/base"
-require "gofer/response"
-require "gofer/error"
 require "net/scp"
 
 module Gofer
   class Remote < Base
     def initialize(hostname, username, opts = {})
-      @hostname, @username = hostname, username
+      @hostname = hostname
+      @username = username
       super(opts)
     end
 
     def ssh
-      @ssh ||= Net::SSH.start(
-        @hostname, @username, @ssh_opts
-      )
+      @ssh ||= Net::SSH.start(@hostname, @username, @ssh_opts)
     end
 
     def scp
-      @scp ||= Net::SCP.new(
-        ssh
-      )
+      @scp ||= Net::SCP.new(ssh)
     end
+
+    # TODO: Wrap this with a debug class.
 
     def run(command, opts = {})
       out = ssh_execute(command, opts = normalize_opts(opts))
       raise_if_bad_exit(command, out, opts)
-    out
+      out
     end
 
     def read(path)
-      scp.download!(
-        path
-      )
+      scp.download!(path)
     end
 
     def write(data, to)
@@ -61,10 +62,13 @@ module Gofer
     private
     def build_env(cmd, env)
       return cmd if env.empty?
+
+
       env.each do |k, v|
-        cmd = cmd.prepend(%Q{export #{k}=#{Shellwords.shellescape(v)}; })
+        cmd = "export #{k}=#{Shellwords.shellescape(v)}; #{cmd}"
       end
-    cmd
+
+      cmd
     end
 
     private

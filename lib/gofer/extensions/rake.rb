@@ -17,7 +17,7 @@ module Rake
       Rake.current_task = @name
       rtn = @@__old_execute_0xa5df.bind(self).call(*args)
       Rake.current_task = nil
-    rtn
+      rtn
     end
   end
 end

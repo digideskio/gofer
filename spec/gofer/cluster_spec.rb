@@ -3,8 +3,8 @@ require "rspec/helper"
 describe Gofer::Cluster do
 
   before :all do
-    @host1 = Gofer::Host.new("127.0.0.1", ENV["USER"], :quiet_stdout => true)
-    @host2 = Gofer::Host.new("127.0.0.2", ENV["USER"], :quiet_stdout => true)
+    @host1 = Gofer::Remote.new("127.0.0.1", ENV["USER"], :quiet_stdout => true)
+    @host2 = Gofer::Remote.new("127.0.0.2", ENV["USER"], :quiet_stdout => true)
     [@host1, @host2].each do |v|
       (@cluster ||= Gofer::Cluster.new) << v
     end
@@ -33,10 +33,10 @@ describe Gofer::Cluster do
   end
 
   it "should encapsulate errors in a Gofer::ClusterError container exception" do
-    expect { @cluster.run("false") }.to raise_error(Gofer::ClusterError)
+    expect { @cluster.run("false") }.to raise_error(Gofer::Cluster::Error)
 
     begin; @cluster.run "false"
-    rescue Gofer::ClusterError => e
+    rescue Gofer::Cluster::Error => e
       expect(e.errors.keys.length).to eq(2)
       expect(e.errors[@host1]).to be_a(Gofer::Error)
       expect(e.errors[@host2]).to be_a(Gofer::Error)
