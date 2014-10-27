@@ -1,13 +1,12 @@
 module Gofer
   class Deploy
     class Debug
-      attr_reader :response, :opts, :config, :cmd
+      attr_reader :opts, :config, :cmd, :debug
       BASE_DEBUG_LINE = "run %s from %s on %s"
 
-      def initialize(cmd = nil, opts = nil, config = nil)
+      def initialize(cmd, opts, config)
         @opts = opts
         @config = config
-        @response = nil
         @cmd = cmd
       end
 
@@ -15,13 +14,17 @@ module Gofer
         %Q{<#{self.class} #{@cmd}>}
       end
 
-      def response=(value)
-        @response ? (return) : @response = value
+      def response
+        @debug.response
+      end
+
+      def debug=(value)
+        @debug ? (return) : @debug = value
       end
 
       def exit_if_asked
-        unless @opts[:capture_exit_status] || @response.exit_status == 0
-          exit(@response.exit_status)
+        unless @opts[:capture_exit_status] || response.exit_status == 0
+          exit(response.exit_status)
         end
       self
       end

@@ -41,7 +41,7 @@ class Gofer::Deploy
     debug = Debug.new(cmd, opts, config)
 
     debug.print
-    debug.response = opts[:server].run(cmd, opts[:gofer])
+    debug.debug = opts[:server].run(cmd, opts[:gofer])
     debug.exit_if_asked
   end
 
@@ -99,17 +99,26 @@ class Gofer::Deploy
   end
 
   private
+  def set_env_pwd(opts)
+    dpwd = config[config[:default_pwd]]
+    unless opts[:env][:PWD] || opts[:server] == :localhost || dpwd.nil? || dpwd.empty?
+      opts[:env][:PWD] = dpwd
+    end
+
+    opts
+  end
+
+  private
   def normalize_opts(opts)
     opts = base_normalized_opts.dup.elegant_merge!(opts)
-    set_gofer(set_server(opts.merge_if!({
+    set_env_pwd(set_gofer(set_server(opts.merge_if!({
       :server  => config[:default_server],
       :stdout  => $stdout,
       :stderr  => $stderr,
       :capture => false  ,
 
       :env => {
-        :PWD => (opts[:server] == :localhost ? nil : \
-          config[config[:default_pwd]])
+
       },
 
       :gofer => {
@@ -118,7 +127,7 @@ class Gofer::Deploy
         :quiet_stderr => config[:deploy_output_level] == 0,
         :ansi => true
       }
-    })))
+    }))))
   end
 
   class << self

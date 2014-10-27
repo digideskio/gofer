@@ -1,20 +1,10 @@
 require "gofer/deploy"
-class MockRemote
-  def run(cmd, opts)
-    Gofer::Response.new(cmd, "", cmd, 0)
-  end
-
-  def to_s
-    "mock@mockhost"
-  end
-end
 
 describe Gofer::Deploy do
   before :all do
     ENV["DEPLOY_CONFIG"] = File.expand_path("../../support/deploy.yml", __FILE__)
     @deploy = Gofer::Deploy.new(:server => :mock, :skip_debug => true)
-    @deploy.config[:deploy_servers][:mock] = \
-      MockRemote.new
+    @deploy.config[:deploy_servers][:mock] = MockRemote.new
   end
 
   specify "output useful debug information" do
@@ -22,8 +12,10 @@ describe Gofer::Deploy do
     @deploy.config[:deploy_output_level] = 10
     out1, out2 = StringIO.new, StringIO.new
     @deploy.run("echo hello", :stdout => out1, :stderr => out2, :skip_debug => false)
-    expect(Gofer::Helpers::Ansi.strip(out2.string)).to match "run echo hello from none on mock@mockhost with env"
     @deploy.config[:deploy_output_level] = old_opl
+
+    # Run this last because it leaves early and will kill the output_level reset.
+    expect(Gofer::Helpers::Ansi.strip(out2.string)).to match "run echo hello from none on mock@mock with env"
   end
 
   context "argv" do

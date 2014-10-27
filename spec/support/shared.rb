@@ -2,15 +2,15 @@ shared_examples_for :run do
   describe :run do
     describe "with stdout and stderr responses" do
       before :all do
-        @response = @host.run("echo stdout; echo stderr 1>&2", {
+        @out = @host.run("echo stdout; echo stderr 1>&2", {
           :quiet_stderr => true, :quiet_stdout => true
         })
       end
 
-      it("captures stderr") { expect(@response.stderr.strip).to eq "stderr" }
-      specify("have a combination output")  {  expect(@response.output.strip).to eq "stdout\nstderr" }
-      specify("behave like a string and default to stdout") { expect(@response.strip).to eq "stdout" }
-      it("captures stdout") { expect(@response.stdout.strip).to eq "stdout" }
+      it("captures stderr") { expect(@out.response.stderr.strip).to eq "stderr" }
+      specify("have a combination output")  {  expect(@out.response.output.strip).to eq "stdout\nstderr" }
+      specify("behave like a string and default to stdout") { expect(@out.response.strip).to eq "stdout" }
+      it("captures stdout") { expect(@out.response.stdout.strip).to eq "stdout" }
     end
 
     it "changes directories if requested to through :PWD" do
@@ -97,8 +97,8 @@ shared_examples_for :run do
     end
 
     specify "capture a non-zero exit status if told" do
-      response = @host.run("false", :capture_exit_status => true)
-      expect(response.exit_status).to eq 1
+      out = @host.run("false", :capture_exit_status => true)
+      expect(out.response.exit_status).to eq 1
     end
 
     specify "use ANSI when told to" do

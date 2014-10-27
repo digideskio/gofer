@@ -1,6 +1,7 @@
 require "gofer/helpers/stdio"
 require "gofer/extensions/hash"
 require "gofer/response"
+require "gofer/debug"
 require "gofer/base"
 require "gofer/error"
 
@@ -14,7 +15,7 @@ module Gofer
     def initialize(hostname, username, opts = {})
       @hostname = hostname
       @username = username
-      super(opts)
+      super opts
     end
 
     def ssh
@@ -25,13 +26,66 @@ module Gofer
       @scp ||= Net::SCP.new(ssh)
     end
 
-    # TODO: Wrap this with a debug class.
+    def run(cmd, opts = {})
+      exit_status = 0
+      stdout = ""
+      stderr = ""
+      output = ""
 
-    def run(command, opts = {})
-      out = ssh_execute(command, opts = normalize_opts(opts))
-      raise_if_bad_exit(command, out, opts)
-      out
+      opts = normalize_opts(opts)
+      debug = debug = Debug.new(cmd, opts, opts[:env], self)
+      cmd = set_pwd_on_cmd(cmd, opts[:env])
+      cmd = set_env_on_cmd(cmd, opts[:env])
+
+      ssh.open_channel do |channel|
+        channel.exec(cmd) do |_, s|
+          raise "SSH Channnel: Couldn't execute command #{cmd}" unless s
+
+          channel.on_extended_data do |_, type, data|
+            next unless type == 1
+            write_stdio(:stderr, {
+              :output => output,
+              :opts => opts,
+              :stderr => {
+                :in => data,
+                :out => stderr
+              }
+            })
+          end
+
+          channel.on_data do |_, data|
+            write_stdio(:stdout, {
+              :output => output,
+              :opts => opts,
+              :stdout => {
+                :in => data,
+                :out => stdout
+              }
+            })
+          end
+
+          channel.on_request("exit-status") do |_, data|
+            exit_status = data.read_long
+            channel.close
+          end
+
+          if opts[:stdin]
+            channel.send_data(opts[:stdin])
+            channel.eof!
+          end
+        end
+      end
+
+      ssh.loop
+      debug.cmd = cmd
+      debug.response = Gofer::Response.new(stdout, stderr, output, exit_status)
+      debug.raise_if_asked
     end
+
+    # TODO: ->
+    #   I don't think this does what I think it does because that would
+    #   make no sense whatsoever if it did, but I guess I'll have to edge
+    #   test it to find out.
 
     def read(path)
       scp.download!(path)
@@ -44,83 +98,14 @@ module Gofer
 
       upload(tmpfile.path, to)
     ensure
-      [:close, :unlink].map do |k|
-        tmpfile.send(k)
-      end
+      tmpfile.close
+      tmpfile.unlink
     end
 
-    [:download, :upload].each do |k|
+    [:download, :upload].map do |k|
       define_method k do |f, t, o = {}|
         scp.send("#{k}!", f, t, o.merge(:recursive => File.directory?(f)))
       end
-    end
-
-    # Because a lot of servers don't have AcceptEnv past LC_* there is no
-    # reason to ever rely on +Net::SSH+ to send the environment, just send it
-    # by attaching it as an export on each command.
-
-    private
-    def build_env(cmd, env)
-      return cmd if env.empty?
-
-
-      env.each do |k, v|
-        cmd = "export #{k}=#{Shellwords.shellescape(v)}; #{cmd}"
-      end
-
-      cmd
-    end
-
-    private
-    def ssh_execute(cmd, opts = {})
-      opts = normalize_opts(opts)
-      exit_status = 0
-      stdout = ""
-      stderr = ""
-      output = ""
-
-      cmd = build_env(attach_cd(cmd, opts[:env]), opts[:env])
-      ssh.open_channel do |c|
-        c.exec(cmd) do |_, s|
-          raise "SSH Channnel: Couldn't execute command #{command}" unless s
-
-          c.on_extended_data do |_, t, d|
-            next unless t == 1
-            write_stderr({
-              :output => output,
-              :opts => opts,
-              :stderr => {
-                :in => d,
-                :out => stderr
-              }
-            })
-          end
-
-          c.on_data do |_, d|
-            write_stdout({
-              :output => output,
-              :opts => opts,
-              :stdout => {
-                :in => d,
-                :out => stdout
-              }
-            })
-          end
-
-          c.on_request("exit-status") do |_, d|
-            exit_status = d.read_long
-            c.close
-          end
-
-          if opts[:stdin]
-            c.send_data(opts[:stdin])
-            c.eof!
-          end
-        end
-      end
-
-      ssh.loop
-      Gofer::Response.new(stdout, stderr, output, exit_status)
     end
   end
 end

@@ -12,8 +12,13 @@ describe Gofer::Cluster do
 
   specify "run commands async" do
     results = @cluster.run("bash -l -c \"ruby -e 'puts Time.now.to_i; sleep 1; puts Time.now.to_i'\"")
-    res1 = results[@host1].stdout.lines.to_a.map(&:to_i)
-    res2 = results[@host2].stdout.lines.to_a.map(&:to_i)
+    res1 = results[@host1].response.lines.map(&:to_i)
+    res2 = results[@host2].response.lines.map(&:to_i)
+
+    (res1 + res2).each do |value|
+      expect(value).to be > 0
+    end
+
     expect(res1[0]).to eq res2[0]
     expect(res1[1]).to eq res2[1]
   end
@@ -24,11 +29,15 @@ describe Gofer::Cluster do
 
     specify "respect max_concurrency" do
       results = @cluster.run("bash -l -c \"ruby -e 'puts Time.now.to_i; sleep 1; puts Time.now.to_i'\"")
-      res1 = results[@host1].stdout.lines.to_a
-      res2 = results[@host2].stdout.lines.to_a
+      res1 = results[@host1].response.lines.map(&:to_i)
+      res2 = results[@host2].response.lines.map(&:to_i)
 
-      expect(res2[0].to_i).to be > res1[0].to_i
-      expect(res2[1].to_i).to be > res1[1].to_i
+      (res1 + res2).each do |value|
+        expect(value).to be > 0
+      end
+
+      expect(res2[0]).to be > res1[0]
+      expect(res2[1]).to be > res1[1]
     end
   end
 

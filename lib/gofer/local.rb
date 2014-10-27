@@ -1,5 +1,6 @@
 require "gofer/error"
 require "gofer/response"
+require "gofer/debug"
 require "gofer/base"
 require "open3"
 
@@ -18,15 +19,17 @@ module Gofer
       output = ""
 
       opts = normalize_opts(opts)
-      # TODO: Expand the single letter variables when you have time.
-      Open3.popen3(opts[:env], attach_cd(cmd, opts[:env])) do |i, o, e, t|
+      debug = Debug.new(cmd, opts, opts[:env], self)
+      cmd = set_pwd_on_cmd(cmd, opts[:env])
+
+      Open3.popen3(opts[:env], cmd) do |_in, out, err, wait|
         if opts[:stdin]
-          i.puts opts[:stdin]
+          _in.puts opts[:stdin]
         end
 
-        i.close
-        while line = o.gets do
-          write_stdout({
+        _in.close
+        while line = out.gets do
+          write_stdio(:stdout, {
             :output => output,
             :opts => opts,
             :stdout => {
@@ -36,8 +39,8 @@ module Gofer
           })
         end
 
-        while line = e.gets do
-          write_stderr({
+        while line = err.gets do
+          write_stdio(:stderr, {
             :output => output,
             :opts => opts,
             :stderr => {
@@ -47,15 +50,14 @@ module Gofer
           })
         end
 
-        if ! t.value.success?
-          exit_status = t.value.exitstatus
+        if ! wait.value.success?
+          exit_status = wait.value.exitstatus
         end
       end
 
-      # Just mock out what Gofer normally mocks out.
-      out = Gofer::Response.new(stdout, stderr, output, exit_status)
-      raise_if_bad_exit(cmd, out, opts)
-    out
+      debug.cmd = cmd
+      debug.response = Gofer::Response.new(stdout, stderr, output, exit_status)
+      debug.raise_if_asked
     end
   end
 end
