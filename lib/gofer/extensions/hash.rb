@@ -5,23 +5,6 @@ class Hash
     end
   end
 
-  unless method_defined?(:symbolize_keys!)
-    def symbolize_keys!
-      replace(symbolize_keys)
-    end
-  end
-
-  unless method_defined?(:symbolize_keys)
-    def symbolize_keys
-      inject({}) do |hash, (key, value)|
-        value = value.symbolize_keys if value.is_a?(Hash)
-        key = key.to_sym if key.is_a?(String)
-        hash[key] = value
-        hash
-      end
-    end
-  end
-
   unless method_defined?(:stringize!)
     def stringize!
       replace(stringize)
