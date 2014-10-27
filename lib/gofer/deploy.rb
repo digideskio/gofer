@@ -35,6 +35,21 @@ class Gofer::Deploy
     @base_normalized_opts ||= { :env => config[:deploy_env] }.elegant_merge!(@opts)
   end
 
+  def default_opts
+    @default_opts ||= {
+      :server  => config[:default_server],
+      :stdout  => $stdout,
+      :stderr  => $stderr,
+      :capture => false  ,
+      :gofer => {
+        :capture_exit_status => true,
+        :quiet_stdout => config[:deploy_output_level]  < 1,
+        :quiet_stderr => config[:deploy_output_level] == 0,
+        :ansi => true
+      }
+    }
+  end
+
   def run(cmd, opts = {})
     opts = normalize_opts(opts)
     cmd = attach_argv(cmd, opts[:argv]) if opts[:argv]
@@ -111,23 +126,7 @@ class Gofer::Deploy
   private
   def normalize_opts(opts)
     opts = base_normalized_opts.dup.elegant_merge!(opts)
-    set_env_pwd(set_gofer(set_server(opts.merge_if!({
-      :server  => config[:default_server],
-      :stdout  => $stdout,
-      :stderr  => $stderr,
-      :capture => false  ,
-
-      :env => {
-
-      },
-
-      :gofer => {
-        :capture_exit_status => true,
-        :quiet_stdout => config[:deploy_output_level]  < 1,
-        :quiet_stderr => config[:deploy_output_level] == 0,
-        :ansi => true
-      }
-    }))))
+    set_env_pwd(set_gofer(set_server(opts.merge_if!(default_opts))))
   end
 
   class << self
