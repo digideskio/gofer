@@ -1,4 +1,5 @@
 require "gofer/error"
+require "forwardable"
 require "gofer/response"
 require "gofer/debug"
 require "gofer/base"
@@ -6,10 +7,22 @@ require "open3"
 
 module Gofer
   class Local < Base
+    extend Forwardable
+
+    def_delegator :File, :read
+
     def initialize(opts = {})
       @username = ENV["USER"]
       @hostname = "localhost"
       super
+    end
+
+    def write(data, to)
+      file = File.open(to, "w+")
+      file.write(data)
+      nil
+    ensure
+      file.close
     end
 
     def run(cmd, opts = {})

@@ -37,26 +37,6 @@ describe Gofer::Remote do
     end
   end
 
-  describe :read do
-    it "reads the contents of a file" do
-      with_tmp do |t|
-        expect(@host.read(t.create_tmpfile("hello", "hello\nworld")).strip).to \
-          eq "hello\nworld"
-      end
-    end
-  end
-
-  describe :write do
-    specify "files" do
-      with_tmp do |t|
-        file = t.tmpdir.join("hello")
-        @host.write("world", file)
-        expect(file.file?).to eq true
-        expect(file.read.strip).to eq "world"
-      end
-    end
-  end
-
   describe :upload do
     specify "files" do
       with_tmp do |t|
