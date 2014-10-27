@@ -82,11 +82,6 @@ module Gofer
       debug.raise_if_asked
     end
 
-    # TODO: ->
-    #   I don't think this does what I think it does because that would
-    #   make no sense whatsoever if it did, but I guess I'll have to edge
-    #   test it to find out.
-
     def read(path)
       scp.download!(path)
     end
