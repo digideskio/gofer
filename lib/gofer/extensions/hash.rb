@@ -30,6 +30,7 @@ class Hash
 
   unless method_defined?(:stringize)
     def stringize
+      return self unless size > 0
       inject({}) do |hash, (key, value)|
         hash[key.to_s] = value.to_s
         hash
