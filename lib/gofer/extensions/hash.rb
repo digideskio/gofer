@@ -25,7 +25,7 @@ class Hash
     def merge_if!(hash)
       merge!(hash) do |key, old_value, new_value|
         if new_value.is_a?(Hash) && old_value.is_a?(Hash)
-          old_value.merge(new_value)
+          old_value.merge_if!(new_value)
         else
           ! has_key?(key) || old_value.nil? ? new_value : old_value
         end
