@@ -1,8 +1,0 @@
-app: "www"
-deploy_folder: /var/lib/app/%{app}
-deploy_backup_folder: /var/lib/app/backup/%{app}.%{utime}
-default_server: localhost
-deploy_output_level: 0
-
-deploy_env:
-  RAILS_ENV: production

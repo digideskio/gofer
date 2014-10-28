@@ -14,9 +14,12 @@ describe Gofer::Local do
   end
 
   it "accepts a custom stdio" do
-    host = Gofer::Local.new(:stdio => TempStdio)
+    host = Gofer::Local.new({
+      :stdio => Gofer::Rspec::Stdio
+    })
+
     host.run("echo hello")
-    expect(host.send(:stdio)).to be_kind_of TempStdio
+    expect(host.send(:stdio)).to be_kind_of Gofer::Rspec::Stdio
     expect(host.send(:stdio).stringio.string.strip).to eq "hello"
   end
 

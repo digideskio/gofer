@@ -17,11 +17,11 @@ describe Gofer::Remote do
 
   specify "accept custom stdio" do
     host = Gofer::Remote.new("127.0.0.1", ENV["USER"], {
-      :stdio => TempStdio
+      :stdio => Gofer::Rspec::Stdio
     })
 
     host.run("echo hello")
-    expect(host.send(:stdio)).to be_kind_of TempStdio
+    expect(host.send(:stdio)).to be_kind_of Gofer::Rspec::Stdio
     expect(host.send(:stdio).stringio.string.strip).to eq "hello"
   end
 

@@ -1,3 +1,5 @@
+require "gofer/extensions/hash"
+require "gofer/helpers/stdio"
 require "timeout"
 
 module Gofer
