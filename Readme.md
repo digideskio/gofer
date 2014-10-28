@@ -5,95 +5,101 @@
 [![Build Status](https://travis-ci.org/envygeeks/gofer.svg?branch=master)](https://travis-ci.org/envygeeks/gofer)
 [![Coverage Status](https://img.shields.io/coveralls/envygeeks/gofer.svg)](https://coveralls.io/r/envygeeks/gofer)
 
-*The docs you are reading are for the future 2.0.0 version of envygeeks-gofer
-which is still away off because it requires me to finish adding in my deploy
-stuff and helpers.  Please note that a lot has changed.*
-
-This is my personal fork of https://github.com/mipearson/gofer please see that
-repo if you are looking for something that is aimed at the general public and
-not me.  Though mine does fix some of the issues that were on the TODO I am
-just waiting to see if he would like to collaborate on bringing my code with
-his since we write code in drastically different ways.
-
 ## What is Gofer?
 
-**Gofer** is a set of wrappers around the Net::SSH suite of tools to enable
-consistent access to remote systems. **Gofer** has been written to support the
-needs of system automation scripts. As such, **gofer** will:
+`Gofer` is a set of wrappers around the `Net::SSH` suite of tools to enable persistent access to remote systems. `Gofer` has been written to support the needs of system automation scripts. As such, `Gofer` will:
 
-  * Print and capture STDOUT and STDERR automatically
-  * Automatically raise an error if a command returns a non-zero exit status
-  * Allow you to access captured STDOUT and STDERR individually or as a combined string
-  * Override the above: return non-zero exit status instead of raising an error, suppress output
-  * Persist the SSH connection so that multiple commands don't incur connection penalties
-  * Allow multiple simultaneous command execution on a cluster of hosts via `Gofer::Cluster`
+  * Print and capture `STDOUT` and `STDERR` automatically.
+  * Automatically `raise` an error if a command returns a non-zero exit status.
+  * Allow you to access captured `STDOUT` and `STDERR` individually or as a combined.
+  * Persist the SSH connection so that multiple commands don't incur connection penalties.
+  * Allow multiple simultaneous command executions on a cluster of hosts.
+  * Override: return non-zero exit instead of raising, suppress output.
 
-## Examples
-
-Below you will find several basic examples.
-
-### Init
+## Init
 
 ```ruby
-local = Gofer::Local.new
-```
-
-```ruby
-ssh = Gofer::Remote.new("host.com", "ubuntu", :keys => [
+local  = Gofer::Local.new
+remote = Gofer::Remote.new("host.com", "ubuntu", :keys => [
   "~/.ssh/id_rsa"
 ])
 ```
 
-### Options
+*Please note you **do not** need the keys option.*
 
-There are options that can be passed into initialize and options that can be
-passed into run.  Both accept any number of extra options that even we don't
-recognize but there is one big difference, extra options that are not known
-on `#run` (both `Gofer::Local` and `Gofer::Remote`) are passed into
-`Gofer::Stdio` and any options that are unknown on `Gofer::Remote` are
-passed into `Net::SSH`
+## Options (**opts**)
 
-#### Known Options
+There are options that can be passed into initialize and options that can be passed into run. They are technically one in the same except that options passed into initialize are overridden by options passed into `#run` itself.
+
+### Known Options
 
 ```ruby
-:stdout # Custom STDOUT
-:stdio # Custom STDIO Class.
-:output_prefix # Use an output Prefix.
-:timtout # Currently unused but also passed to `Net::SSH`
+:stdout # Custom STDOUT class (Stdio).
+:stdio # Custom STDIO class (Stdio).
+:output_prefix # Use an output Prefix (Stdio).
+:timeout # Currently unused but also passed to `Net::SSH`
+:stderr # Custom STDERR class (Stdio).
 :env # Environment variables to set.
-:stderr # Custom STDERR
 ```
 
-### Commands
+*Unknown options sent into `new` are decided based on `Gofer::Stdio`, if `Gofer::Stdio` does not know them then it is sent to `Net::SSH`... but unknown options sent into `run` are ignored for the most part because it's infeasible to sort them on the fly, reinitialize `Net::SSH` and cause overhead.*
+
+## Commands
 
 ```ruby
-ssh.run("sudo stop mysqld")
+ssh.run("echo $MY_VAR", :env => { :MY_VAR => "value" })
 ```
 
-### Copy
+## Debug
+
+Gofer returns a full debug class with lots of insight into what happens with your commands, such as the original command, the modified command (if we add `cd` for `PWD` and `VAR=val` for `env`.) The opts we used, the env (the original hash,) and lots of other stuff that would be helpful.  This isn't really to help you but to help me in the event something goes wrong, providing the output of the debug class will provide me great insight into exactly where things went wrong and quickly allow me to fix it and add a test for the edge.
 
 ```ruby
+debug = ssh.run("echo $RAILS_ENV", :env => {
+  :PWD => "/home/user",
+  :RAILS_ENV => :production
+})
+
+debug.cmd # => "RAILS_ENV=production; cd /home/user && echo $RAILS_ENV"
+debug.original_cmd # => "echo $RAILS_ENV"
+debug.response.stdout # => "production\n"
+debug.response.output # => "production\n"
+debug.response.stderr # => ""
+debug.response # => <Gofer::Response> AKA ""
+debug.env # => { "RAILS_ENV" => "production" }
+debug.opts # => { "YOUR OPTS HASH NORMALIED" => "Here" }
+
+# Delegates:
+
+debug == 1 # debug.response.exit_status
+debug >= 1 # debug.response.exit_status
+debug <= 1 # debug.response.exit_status
+debug >  1 # debug.response.exit_status
+debug <  1 # debug.response.exit_status
+
+debug.stdout # debug.response
+debug.stderr # debug.response
+debug.output # debug.response
+debug.exit_status # debug.response
+```
+
+## Downloading, uploading and reading.
+
+```ruby
+ssh.download("file", "file")
 ssh.upload("file", "remote_file")
-ssh.download("remote_dir", "dir")
+output = ssh.read("file")
 ```
 
-### Interact
+## Handling Errors
 
 ```ruby
-ssh.run("rm -rf 'remote_directory'") if ssh.exist?("remote_directory")
-ssh.write("String", "a_remote_file")
-$stdout.puts ssh.read("a_remote_file")
+ssh.run("false") # Raises Gofer::Error
+debug = ssh.run("false", :capture_exit_status => true)
+$stdout.puts debug.exit_status unless debug == 0
 ```
 
-### Handle Errors
-
-```ruby
-ssh.run("false")
-response = ssh.run("false", :capture_exit_status => true)
-$stdout.puts response.exit_status unless response.exit_status == 0
-```
-
-### Custom Output Handler
+## Custom Output Handler
 
 Gofer handles StdIO using a custom wrapper that has a base set of options, and
 a normalizer that allows you to accept options via each method directly, so
@@ -120,33 +126,30 @@ end
 Gofer::Remote.new(:stdio => MyStdio)
 ```
 
-### Change where stdout and stderr goes without Stdio wrappers
+### Change where `:stdout` and `:stderr` goes without `Stdio` wrappers
+
+On top of using an StdIO wrapper, `Gofer::Stdio` also accepts that you sometimes just want to override where the output goes, so you can also pass `Gofer::Remote` and `Gofer::Local` and `:stdout` and `:stderr` and it will make sure that `Gofer::Stdio` gets it.
 
 ```ruby
-Gofer::Remote.new({
+ssh = Gofer::Remote.new({
   :stdout => stdout = StringIO.new,
   :stderr => stderr = StringIO.new
 })
+
+ssh.run("echo hello")
+stdout.string.strip == "hello" # => true
 ```
 
-### Capture
+## Stdin
+
+Want to pass data into `:stdin` of a command? Then `Gofer` has you covered.
 
 ```ruby
-response = ssh.run("echo hello; echo goodbye 1>&2\n")
-$stdout.puts response
-$stdout.puts response.stdout
-$stdout.puts response.stderr
-$stdout.puts response.output
+debug = ssh.run("sed 's/foo/bar/'", :stdin => "hello foo\n")
+$stdout.puts debug.response.output
 ```
 
-### Stdin
-
-```ruby
-response = ssh.run("sed 's/foo/bar/'", :stdin => "hello foo\n")
-$stdout.puts response.output
-```
-
-### Prefix
+## Output Prefixes
 
 ```ruby
 ssh.output_prefix = "apollo"
@@ -154,15 +157,14 @@ ssh.run("echo hello; echo goodbye")
 # => apollo: hello\napollo: goodbye
 ```
 
-### Suppression
+## Suppress
 
 ```ruby
 ssh.run "echo noisy", :quiet_stdout => true
 ssh.run "echo noisier 1>&2", :quiet_stderr => true
-ssh.quiet = true
 ```
 
-### Async (Clustered) Hosts
+## Async (Clustered) Hosts
 
 ```ruby
 cluster = Gofer::Cluster.new
@@ -171,7 +173,7 @@ cluster << Gofer::Host.new("host.com", "ubuntu", :output_prefix => "host2")
 cluster.run "hostname"
 ```
 
-#### Async Concurrency
+### Concurrency
 
 ```ruby
 cluster.max_concurrency = 1
@@ -179,7 +181,7 @@ result = cluster.run("sudo /etc/init.d/apache2 restart")
 $stdout.puts results.values.join(", ")
 ```
 
-#### Exceptions
+## Exceptions
 
 ```ruby
 begin; cluster.run "rake deploy"; rescue Gofer::ClusterError => e
@@ -192,7 +194,7 @@ begin; cluster.run "rake deploy"; rescue Gofer::ClusterError => e
 end
 ```
 
-#### Environment Variables
+## Environment Variables
 
 ```ruby
 host1 = Gofer::Remote.new("user", "host", :env => { :VAR1 => :val })
@@ -201,50 +203,7 @@ host1.run("echo $VAR1; echo $VAR2", :env => { :VAR2 => :val })
 host2.run("echo $VAR1; echo $VAR2", :env => { :VAR2 => :val })
 ```
 
-### Gofer::Deploy
-
-`Gofer::Deploy` is a helper that loads a deploy.yml, normalizes it and then
-helps you output useful information to the terminal.
-
-```ruby
-Gofer::Deploy.new.run("echo hello", :server => :app, :argv => { :n => true })
-# => "from none echo -n hello"
-```
-
-#### deploy.yml
-
-```yml
-default_server: app
-default_pwd: deploy_folder
-deploy_output_level: 2
-app: "www"
-
-deploy_env:
-  RAILS_ENV: production
-
-deploy_servers:
-  root: host
-  app:  host
-
-
-# You can place anything else you would like in your deploy.yml here, and it
-# won't affect the deployer, you can add anything, the above are just values
-# that we expect by default.
-```
-#### Known Opts
-
-```ruby
-:env # Accepted on both #run and #new
-:gofer # options for Gofer::{Remote,Local}
-:server # The server from :deploy_servers (symbol key)
-:argv # Any (--|-) arguments (only useful when they are config args)
-:env # run :env > new :env > :deploy_env (merged into each)
-:capture # Prevent exit.
-:stdout # The stdout
-:stderr # The stderr
-```
-
-## Testing
+## Testing `Gofer`
 
 If you are looking for the true quick and dirty of how to get it up without
 much trouble... take a look at travis.yml in the repo root and it will show
