@@ -1,6 +1,18 @@
 module Gofer
   class Debug
-    attr_reader :response, :original_cmd, :cmd, :opts, :env
+    attr_reader :opts, :original_cmd, :object, :env, :response, :cmd
+    extend Forwardable
+
+    def_delegator "response.exit_status", :>=
+    def_delegator "response.exit_status", :>
+    def_delegator "response.exit_status", :<
+    def_delegator "response.exit_status", :<=
+    def_delegator "response.exit_status", :==
+    def_delegator :response, :to_s
+    def_delegator :response, :stdout
+    def_delegator :response, :stderr
+    def_delegator :response, :output
+    def_delegator :response, :exit_status
 
     def initialize(original_cmd, opts, env, object)
       @opts = opts
@@ -17,7 +29,7 @@ module Gofer
       if ! @response
         @response = value
       else
-        raise ArgumentError, "Value already set."
+        raise ArgumentError, "@response already set."
       end
     end
 
@@ -25,17 +37,13 @@ module Gofer
       if ! @cmd
         @cmd = value
       else
-        raise ArgumentError, "Value already set."
+        raise ArgumentError, "@cmd already set."
       end
     end
 
-    # I return self here so that it can be called last in a long line of calls
-    # and simply just return self so you don't need to also add `return debug` to
-    # whatever you are doing.
-
     def raise_if_asked
-      if ! @opts[:capture_exit_status] && @response.exit_status != 0
-        raise Error.new(@object, @response, @cmd)
+      if ! opts[:capture_exit_status] && response.exit_status != 0
+        raise Error.new(object, response, cmd)
       end
 
       self
