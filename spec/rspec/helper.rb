@@ -4,7 +4,6 @@ require "gofer"
 
 require "gofer/rspec/stdio"
 require "gofer/rspec/helpers"
-require "gofer/rspec/tmp"
 require "support/shared"
 
 RSpec.configure do |config|

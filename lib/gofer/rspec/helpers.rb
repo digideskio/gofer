@@ -1,3 +1,5 @@
+require "gofer/rspec/tmp"
+
 module Gofer
   module Rspec
     module Helpers
