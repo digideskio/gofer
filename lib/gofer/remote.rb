@@ -33,7 +33,7 @@ module Gofer
       cmd = set_env_on_cmd(cmd, opts[:env])
 
       debug.cmd = cmd
-      with_timeout(opts[:timeout]) { debug.response = ssh_channel(cmd, opts, "", "", "") }
+      with_timeout(opts[:timeout]) { debug.response = ssh_channel(cmd, opts) }
       debug.raise_if_asked
     end
 
@@ -59,7 +59,7 @@ module Gofer
     end
 
     private
-    def ssh_channel(cmd, opts, stdout, stderr, combined)
+    def ssh_channel(cmd, opts, stdout = "", stderr = "", combined = "")
       exit_status = 0
 
       ssh.open_channel do |channel|

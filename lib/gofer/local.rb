@@ -31,12 +31,12 @@ module Gofer
       cmd = set_pwd_on_cmd(cmd, opts[:env])
 
       debug.cmd = cmd
-      with_timeout(opts[:timeout]) { debug.response = with_open3(cmd, opts, "", "", "") }
+      with_timeout(opts[:timeout]) { debug.response = with_open3(cmd, opts) }
       debug.raise_if_asked
     end
 
     private
-    def with_open3(cmd, opts, stdout, stderr, combined)
+    def with_open3(cmd, opts, stdout = "", stderr = "", combined = "")
       exit_status = 0
 
       Open3.popen3(opts[:env], cmd) do |input, out, err, wait|
