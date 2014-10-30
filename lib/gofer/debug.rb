@@ -1,18 +1,22 @@
 module Gofer
   class Debug
-    attr_reader :opts, :original_cmd, :object, :env, :response, :cmd
+    attr_reader :opts, :original_cmd, :object, :env, :cmd
     extend Forwardable
 
-    def_delegator "response.exit_status", :>=
-    def_delegator "response.exit_status", :>
-    def_delegator "response.exit_status", :<
-    def_delegator "response.exit_status", :<=
-    def_delegator "response.exit_status", :==
-    def_delegator :response, :to_s
-    def_delegator :response, :stdout
-    def_delegator :response, :stderr
-    def_delegator :response, :output
-    def_delegator :response, :exit_status
+    def_delegator "@response.exit_status", :>=
+    def_delegator "@response.exit_status", :>
+    def_delegator "@response.exit_status", :<
+    def_delegator "@response.exit_status", :<=
+    def_delegator "@response.exit_status", :==
+    def_delegator :@response, :each_line
+    def_delegator :@response, :to_enum
+    def_delegator :@response, :lines
+    def_delegator :@response, :strip
+    def_delegator :@response, :to_s
+    def_delegator :@response, :stdout
+    def_delegator :@response, :stderr
+    def_delegator :@response, :output
+    def_delegator :@response, :exit_status
 
     def initialize(original_cmd, opts, env, object)
       @opts = opts
@@ -42,8 +46,8 @@ module Gofer
     end
 
     def raise_if_asked
-      if ! opts[:capture_exit_status] && response.exit_status != 0
-        raise Error.new(object, response, cmd)
+      if ! opts[:capture_exit_status] && self != 0
+        raise Error.new(object, @response, cmd)
       end
 
       self

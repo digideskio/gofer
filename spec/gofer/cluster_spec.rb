@@ -12,8 +12,8 @@ describe Gofer::Cluster do
 
   specify "run commands async" do
     results = @cluster.run("bash -l -c \"ruby -e 'puts Time.now.to_i; sleep 1; puts Time.now.to_i'\"")
-    res1 = results[@host1].response.lines.map(&:to_i)
-    res2 = results[@host2].response.lines.map(&:to_i)
+    res1 = results[@host1].lines.map(&:to_i)
+    res2 = results[@host2].lines.map(&:to_i)
 
     (res1 + res2).each do |value|
       expect(value).to be > 0
@@ -29,8 +29,8 @@ describe Gofer::Cluster do
 
     specify "respect max_concurrency" do
       results = @cluster.run("bash -l -c \"ruby -e 'puts Time.now.to_i; sleep 1; puts Time.now.to_i'\"")
-      res1 = results[@host1].response.lines.map(&:to_i)
-      res2 = results[@host2].response.lines.map(&:to_i)
+      res1 = results[@host1].lines.map(&:to_i)
+      res2 = results[@host2].lines.map(&:to_i)
 
       (res1 + res2).each do |value|
         expect(value).to be > 0

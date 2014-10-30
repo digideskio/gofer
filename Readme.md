@@ -62,26 +62,34 @@ debug = ssh.run("echo $RAILS_ENV", :env => {
 
 debug.cmd # => "RAILS_ENV=production; cd /home/user && echo $RAILS_ENV"
 debug.original_cmd # => "echo $RAILS_ENV"
-debug.response.stdout # => "production\n"
-debug.response.output # => "production\n"
-debug.response.stderr # => ""
-debug.response # => <Gofer::Response> AKA ""
 debug.env # => { "RAILS_ENV" => "production" }
 debug.opts # => { "YOUR OPTS HASH NORMALIED" => "Here" }
-
-# Delegates:
-
-debug == 1 # debug.response.exit_status
-debug >= 1 # debug.response.exit_status
-debug <= 1 # debug.response.exit_status
-debug >  1 # debug.response.exit_status
-debug <  1 # debug.response.exit_status
-
-debug.stdout # debug.response
-debug.stderr # debug.response
-debug.output # debug.response
-debug.exit_status # debug.response
 ```
+
+*The following methods forward to `@response`*
+
+```ruby
+debug.exit_status # 1
+debug.stdout # => "production\n"
+debug.lines # => ["production\n"]
+debug.each_line # => <Enum ["production\n"]>
+debug.to_enum # => <Enum ["production\n"]>
+debug.output # => "production\n"
+debug.to_s # => "production\n"
+debug.stderr # => ""
+```
+
+*The following methods forward to `@response#exit_status`*
+
+```ruby
+debug == 1
+debug >= 1
+debug <= 1
+debug >  1
+debug <  1
+```
+
+*Please note that `@response` is not public because I would like to enforce a consistent API, therefore there will not be a response method to access everything inside of the response, if something is missing please file a pull request and create a ticket for the `String#` you would like and I will be more than happy.  If you do create a pull request please make sure to also update the documentation!*
 
 ## Downloading, uploading and reading.
 
@@ -101,10 +109,7 @@ $stdout.puts debug.exit_status unless debug == 0
 
 ## Custom Output Handler
 
-Gofer handles StdIO using a custom wrapper that has a base set of options, and
-a normalizer that allows you to accept options via each method directly, so
-that you can have a per-case option set, if you wish to add in your own cond.
-you can use this example:
+Gofer handles StdIO using a custom wrapper that has a base set of options, and a normalizer that allows you to accept options via each method directly, so that you can have a per-case option set, if you wish to add in your own cond. you can use this example:
 
 ```ruby
 class MyStdio < Gofer::Stdio
@@ -205,10 +210,7 @@ host2.run("echo $VAR1; echo $VAR2", :env => { :VAR2 => :val })
 
 ## Testing `Gofer`
 
-If you are looking for the true quick and dirty of how to get it up without
-much trouble... take a look at travis.yml in the repo root and it will show
-you how we quickly generate a key and run the tests since Net::SSH does work
-with ~/.ssh/config and the default id_rsa file if you have one installed.
+If you are looking for the true quick and dirty of how to get it up without much trouble... take a look at travis.yml in the repo root and it will show you how we quickly generate a key and run the tests since Net::SSH does work with ~/.ssh/config and the default id_rsa file if you have one installed.
 
   * Setup ~/.ssh/config for 127.0.0.* to prefer your key.
   * Ensure that you support dynamic localhost (127.0.0.1, 127.0.0.2)

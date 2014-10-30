@@ -7,10 +7,9 @@ shared_examples_for :run do
         })
       end
 
-      it("captures stderr") { expect(@out.response.stderr.strip).to eq "stderr" }
-      specify("have a combination output")  {  expect(@out.response.output.strip).to eq "stdout\nstderr" }
-      specify("behave like a string and default to stdout") { expect(@out.response.strip).to eq "stdout" }
-      it("captures stdout") { expect(@out.response.stdout.strip).to eq "stdout" }
+      it("captures stderr") { expect(@out.stderr.strip).to eq "stderr" }
+      specify("have a combination output")  {  expect(@out.output.strip).to eq "stdout\nstderr" }
+      specify("behave like a string and default to stdout") { expect(@out.strip).to eq "stdout" }
     end
 
     it "changes directories if requested to through :PWD" do
@@ -98,7 +97,7 @@ shared_examples_for :run do
 
     specify "capture a non-zero exit status if told" do
       out = @host.run("false", :capture_exit_status => true)
-      expect(out.response.exit_status).to eq 1
+      expect(out.exit_status).to eq 1
     end
 
     specify "use ANSI when told to" do
