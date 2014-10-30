@@ -70,7 +70,7 @@ module Gofer
 
           channel.on_data { |_, data| stdout, combined = write_stdout(data, opts, stdout, combined) }
           channel.on_extended_data { |_, type, data| stderr, combined = write_stderr(data, opts, stderr, combined) }
-          channel.on_request("exit-status") { |_, data| channel.close; exit_status = data.read_long }
+          channel.on_request("exit-status") { |_, data| exit_status = data.read_long }
         end
       end
 
