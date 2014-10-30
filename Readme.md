@@ -74,7 +74,7 @@ debug.stdout # => "production\n"
 debug.lines # => ["production\n"]
 debug.each_line # => <Enum ["production\n"]>
 debug.to_enum # => <Enum ["production\n"]>
-debug.output # => "production\n"
+debug.combined # => "production\n"
 debug.to_s # => "production\n"
 debug.stderr # => ""
 ```
@@ -151,7 +151,7 @@ Want to pass data into `:stdin` of a command? Then `Gofer` has you covered.
 
 ```ruby
 debug = ssh.run("sed 's/foo/bar/'", :stdin => "hello foo\n")
-$stdout.puts debug.response.output
+$stdout.puts debug.combined
 ```
 
 ## Output Prefixes
@@ -216,10 +216,6 @@ If you are looking for the true quick and dirty of how to get it up without much
   * Ensure that you support dynamic localhost (127.0.0.1, 127.0.0.2)
   * OR: You can just authorize id_rsa on localhost without ~/.ssh/config.
   * Run bundle install && rake spec`
-
-## TODO
-
-  * Deal with timeouts and disconnects on persistent connections.
 
 ## License
 

@@ -30,7 +30,6 @@ describe Gofer::Local do
       expect { @host.run "false" }.to raise_error Gofer::Error
       begin  @host.run "false"; rescue Gofer::Error => e
         expect(e).to be_kind_of Gofer::Error
-        expect(e.host).to be_kind_of Gofer::Local
         expect(e.message).to match(/command[^\b]+exited with \d/)
       end
     end

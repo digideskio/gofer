@@ -27,8 +27,7 @@ module Gofer
 
     private
     def with_timeout(timeout)
-      # So you can set 0 and below to kick on notime.
-      if timeout.nil? || timeout.blank? || 1 > timeout
+      if 1 > timeout.to_i
         yield
       else
         Timeout.timeout(timeout) do
@@ -87,12 +86,26 @@ module Gofer
       })
     end
 
+    [:stdout, :stderr].each do |key|
+      define_method "write_#{key}" do |*args|
+        write_stdio(key, *args)
+      end
+    end
+
     private
-    def write_stdio(type, out)
-      if out[type] && out[type][:in]
-        stdio.send(type, out[type][:in], out[:opts])
-        out[type][:out] << out[type][:in] if out[type][:out]
-        out[:output] << out[type][:in]
+    def write_stdio(type, data, opts, std_outerr, combination)
+      if data
+        stdio.send(type, data, opts)
+
+        return [
+           std_outerr + data,
+          combination + data
+        ]
+      else
+        return [
+           stdout_err,
+          combination
+        ]
       end
     end
 

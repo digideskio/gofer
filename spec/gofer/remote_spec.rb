@@ -2,9 +2,7 @@ require "rspec/helper"
 
 describe Gofer::Remote do
   before :all do
-    @host = Gofer::Remote.new("127.0.0.1", ENV["USER"], {
-      :quiet_stdout => true
-    })
+    @host = Gofer::Remote.new("127.0.0.1", ENV["USER"], :quiet_stdout => true)
   end
 
   specify("#hostname == connected hostname") { expect(@host.hostname).to eq "127.0.0.1" }
@@ -31,7 +29,6 @@ describe Gofer::Remote do
     specify "raise if command returns a non-zero" do
       begin  @host.run "false"; rescue Gofer::Error => e
         expect(e).to be_kind_of Gofer::Error
-        expect(e.host).to be_kind_of Gofer::Remote
         expect(e.message).to match(/command[^\b]+exited with \d/)
       end
     end

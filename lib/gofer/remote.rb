@@ -27,58 +27,13 @@ module Gofer
     end
 
     def run(cmd, opts = {})
-      exit_status = 0
-      stdout = ""
-      stderr = ""
-      output = ""
-
       opts = normalize_opts(opts)
-      debug = debug = Debug.new(cmd, opts, opts[:env], self)
+      debug = Debug.new(cmd, opts, opts[:env], self)
       cmd = set_pwd_on_cmd(cmd, opts[:env])
       cmd = set_env_on_cmd(cmd, opts[:env])
 
-      ssh.open_channel do |channel|
-        channel.exec(cmd) do |_, s|
-          raise "SSH Channnel: Couldn't execute command #{cmd}" unless s
-
-          channel.on_extended_data do |_, type, data|
-            next unless type == 1
-            write_stdio(:stderr, {
-              :output => output,
-              :opts => opts,
-              :stderr => {
-                :in => data,
-                :out => stderr
-              }
-            })
-          end
-
-          channel.on_data do |_, data|
-            write_stdio(:stdout, {
-              :output => output,
-              :opts => opts,
-              :stdout => {
-                :in => data,
-                :out => stdout
-              }
-            })
-          end
-
-          channel.on_request("exit-status") do |_, data|
-            exit_status = data.read_long
-            channel.close
-          end
-
-          if opts[:stdin]
-            channel.send_data(opts[:stdin])
-            channel.eof!
-          end
-        end
-      end
-
-      ssh.loop
       debug.cmd = cmd
-      debug.response = Gofer::Response.new(stdout, stderr, output, exit_status)
+      with_timeout(opts[:timeout]) { debug.response = ssh_channel(cmd, opts, "", "", "") }
       debug.raise_if_asked
     end
 
@@ -101,6 +56,31 @@ module Gofer
       define_method k do |f, t, o = {}|
         scp.send("#{k}!", f, t, o.merge(:recursive => File.directory?(f)))
       end
+    end
+
+    private
+    def ssh_channel(cmd, opts, stdout, stderr, combination)
+      exit_status = 0
+
+      ssh.open_channel do |channel|
+        channel.exec(cmd) do |_, success|
+          raise "Couldn't execute command #{cmd}" unless success
+          channel.send_data(opts[:stdin]) if opts[:stdin]
+          channel.eof!
+
+          channel.on_data { |_, data| stdout, combination = write_stdout(data, opts, stdout, combination) }
+          channel.on_extended_data { |_, type, data| stderr, combination = write_stderr(data, opts, stderr, combination) }
+          channel.on_request("exit-status") { |_, data| channel.close; exit_status = data.read_long }
+        end
+      end
+
+      ssh.loop
+      return [
+        stdout,
+        stderr,
+        combination,
+        exit_status
+      ]
     end
   end
 end

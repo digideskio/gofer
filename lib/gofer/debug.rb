@@ -1,6 +1,6 @@
 module Gofer
   class Debug
-    attr_reader :opts, :original_cmd, :object, :env, :cmd
+    attr_reader :opts, :original_cmd, :env, :cmd
     extend Forwardable
 
     def_delegator "@response.exit_status", :>=
@@ -15,13 +15,14 @@ module Gofer
     def_delegator :@response, :to_s
     def_delegator :@response, :stdout
     def_delegator :@response, :stderr
-    def_delegator :@response, :output
+    def_delegator :@response, :combination
     def_delegator :@response, :exit_status
+    def_delegator :@object, :to_s, :host
 
     def initialize(original_cmd, opts, env, object)
       @opts = opts
-      @original_cmd = original_cmd
       @object = object
+      @original_cmd = original_cmd
       @env = env
     end
 
@@ -30,11 +31,9 @@ module Gofer
     end
 
     def response=(value)
-      if ! @response
-        @response = value
-      else
-        raise ArgumentError, "@response already set."
-      end
+      raise ArgumentError, "@response alredy set" if @response
+      raise ArgumentError, "value must be an array" unless value.is_a?(Array)
+      @response = Gofer::Response.new(*value)
     end
 
     def cmd=(value)
@@ -47,7 +46,7 @@ module Gofer
 
     def raise_if_asked
       if ! opts[:capture_exit_status] && self != 0
-        raise Error.new(object, @response, cmd)
+        raise Error.new(host, @response, cmd)
       end
 
       self

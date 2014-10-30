@@ -26,51 +26,34 @@ module Gofer
     end
 
     def run(cmd, opts = {})
-      exit_status = 0
-      stdout = ""
-      stderr = ""
-      output = ""
-
       opts = normalize_opts(opts)
       debug = Debug.new(cmd, opts, opts[:env], self)
       cmd = set_pwd_on_cmd(cmd, opts[:env])
 
-      Open3.popen3(opts[:env], cmd) do |_in, out, err, wait|
-        if opts[:stdin]
-          _in.puts opts[:stdin]
-        end
+      debug.cmd = cmd
+      with_timeout(opts[:timeout]) { debug.response = with_open3(cmd, opts, "", "", "") }
+      debug.raise_if_asked
+    end
 
-        _in.close
-        while line = out.gets do
-          write_stdio(:stdout, {
-            :output => output,
-            :opts => opts,
-            :stdout => {
-              :in => line,
-              :out => stdout
-            }
-          })
-        end
+    private
+    def with_open3(cmd, opts, stdout, stderr, combination)
+      exit_status = 0
 
-        while line = err.gets do
-          write_stdio(:stderr, {
-            :output => output,
-            :opts => opts,
-            :stderr => {
-              :in => line,
-              :out => stderr
-            }
-          })
-        end
+      Open3.popen3(opts[:env], cmd) do |input, out, err, wait|
+        input.puts(opts[:stdin]) if opts[:stdin]
+        input.close
 
-        if ! wait.value.success?
-          exit_status = wait.value.exitstatus
-        end
+        while data = out.gets do stdout, combination = write_stdout(data, opts, stdout, combination) end
+        while data = err.gets do stderr, combination = write_stderr(data, opts, stderr, combination) end
+        exit_status = wait.value.exitstatus if ! wait.value.success?
       end
 
-      debug.cmd = cmd
-      debug.response = Gofer::Response.new(stdout, stderr, output, exit_status)
-      debug.raise_if_asked
+      return [
+        stdout,
+        stderr,
+        combination,
+        exit_status
+      ]
     end
   end
 end

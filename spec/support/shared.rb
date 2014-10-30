@@ -8,7 +8,7 @@ shared_examples_for :run do
       end
 
       it("captures stderr") { expect(@out.stderr.strip).to eq "stderr" }
-      specify("have a combination output")  {  expect(@out.output.strip).to eq "stdout\nstderr" }
+      specify("have a combination output")  {  expect(@out.combination.strip).to eq "stdout\nstderr" }
       specify("behave like a string and default to stdout") { expect(@out.strip).to eq "stdout" }
     end
 
