@@ -36,22 +36,22 @@ module Gofer
     end
 
     private
-    def with_open3(cmd, opts, stdout, stderr, combination)
+    def with_open3(cmd, opts, stdout, stderr, combined)
       exit_status = 0
 
       Open3.popen3(opts[:env], cmd) do |input, out, err, wait|
         input.puts(opts[:stdin]) if opts[:stdin]
         input.close
 
-        while data = out.gets do stdout, combination = write_stdout(data, opts, stdout, combination) end
-        while data = err.gets do stderr, combination = write_stderr(data, opts, stderr, combination) end
+        while data = out.gets do stdout, combined = write_stdout(data, opts, stdout, combined) end
+        while data = err.gets do stderr, combined = write_stderr(data, opts, stderr, combined) end
         exit_status = wait.value.exitstatus if ! wait.value.success?
       end
 
       return [
         stdout,
         stderr,
-        combination,
+        combined,
         exit_status
       ]
     end

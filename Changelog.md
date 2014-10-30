@@ -1,5 +1,6 @@
 # 2.0.0
 
+* Moved output to combined.
 * Add ANSI coloring for people who like it.
 * Added `:stdout` and `:stderr` to allow redirection.
 * Removed the delete insanity, opts are non-destructive now.

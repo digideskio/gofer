@@ -93,18 +93,18 @@ module Gofer
     end
 
     private
-    def write_stdio(type, data, opts, std_outerr, combination)
+    def write_stdio(type, data, opts, std_outerr, combined)
       if data
         stdio.send(type, data, opts)
 
         return [
-           std_outerr + data,
-          combination + data
+          std_outerr + data,
+            combined + data
         ]
       else
         return [
            stdout_err,
-          combination
+             combined
         ]
       end
     end

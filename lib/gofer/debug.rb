@@ -15,7 +15,7 @@ module Gofer
     def_delegator :@response, :to_s
     def_delegator :@response, :stdout
     def_delegator :@response, :stderr
-    def_delegator :@response, :combination
+    def_delegator :@response, :combined
     def_delegator :@response, :exit_status
     def_delegator :@object, :to_s, :host
 

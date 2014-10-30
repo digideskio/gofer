@@ -59,7 +59,7 @@ module Gofer
     end
 
     private
-    def ssh_channel(cmd, opts, stdout, stderr, combination)
+    def ssh_channel(cmd, opts, stdout, stderr, combined)
       exit_status = 0
 
       ssh.open_channel do |channel|
@@ -68,8 +68,8 @@ module Gofer
           channel.send_data(opts[:stdin]) if opts[:stdin]
           channel.eof!
 
-          channel.on_data { |_, data| stdout, combination = write_stdout(data, opts, stdout, combination) }
-          channel.on_extended_data { |_, type, data| stderr, combination = write_stderr(data, opts, stderr, combination) }
+          channel.on_data { |_, data| stdout, combined = write_stdout(data, opts, stdout, combined) }
+          channel.on_extended_data { |_, type, data| stderr, combined = write_stderr(data, opts, stderr, combined) }
           channel.on_request("exit-status") { |_, data| channel.close; exit_status = data.read_long }
         end
       end
@@ -78,7 +78,7 @@ module Gofer
       return [
         stdout,
         stderr,
-        combination,
+        combined,
         exit_status
       ]
     end

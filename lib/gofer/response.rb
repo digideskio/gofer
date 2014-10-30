@@ -1,9 +1,9 @@
 class Gofer::Response < String
-  attr_reader :stdout, :stderr, :combination, :exit_status
+  attr_reader :stdout, :stderr, :combined, :exit_status
 
-  def initialize(stdout, stderr, combination, exit_status)
+  def initialize(stdout, stderr, combined, exit_status)
     @stdout = stdout
-    @combination = combination
+    @combined = combined
     @exit_status = exit_status
     @stderr = stderr
 
