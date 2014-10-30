@@ -22,7 +22,8 @@ module Gofer
           opts = normalize_opts(opts)
 
           unless opts[:"quiet_#{key}"]
-            opts[key].write(wrap_ansi(value, wrap_output(str, opts[:output_prefix]), opts))
+            str = wrap_output(str, opts[:output_prefix])
+            opts[key].write(wrap_ansi(value, str, opts))
           end
         end
       end
@@ -34,12 +35,8 @@ module Gofer
 
       private
       def wrap_output(str, output_prefix)
-        return  str unless output_prefix
-
-        if @prefix_next_line
-          str = "#{output_prefix}: #{str}"
-        end
-
+        return str  unless output_prefix
+        str = "#{output_prefix}: #{str}" if @prefix_next_line
         @prefix_next_line = str.end_with?("\n")
         str.gsub(/\n(.)/, "\n#{output_prefix}: \\1")
       end
