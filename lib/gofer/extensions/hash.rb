@@ -1,34 +1,28 @@
 class Hash
-  def elegant_merge!(hash)
-    merge!(hash) do |key, old_value, new_value|
-      old_value.is_a?(Hash) && new_value.is_a?(Hash) ? old_value.elegant_merge!(new_value) : new_value
+  def deep_merge!(hash)
+    merge!(hash) do |key, ovalue, nvalue|
+      ovalue.is_a?(Hash) && nvalue.is_a?(Hash) ? ovalue.deep_merge!(nvalue) : nvalue
     end
   end
 
-  unless method_defined?(:stringize!)
-    def stringize!
-      replace(stringize)
+  def stringize!
+    replace(stringize)
+  end
+
+  def stringize
+    return self unless size > 0
+    inject({}) do |hash, (key, value)|
+      hash[key.to_s] = value.to_s
+      hash
     end
   end
 
-  unless method_defined?(:stringize)
-    def stringize
-      return self unless size > 0
-      inject({}) do |hash, (key, value)|
-        hash[key.to_s] = value.to_s
-        hash
-      end
-    end
-  end
-
-  unless method_defined?(:merge_if!)
-    def merge_if!(hash)
-      merge!(hash) do |key, old_value, new_value|
-        if new_value.is_a?(Hash) && old_value.is_a?(Hash)
-          old_value.merge_if!(new_value)
-        else
-          ! has_key?(key) || old_value.nil? ? new_value : old_value
-        end
+  def merge_if!(hash)
+    merge!(hash) do |key, ovalue, nvalue|
+      if nvalue.is_a?(Hash) && ovalue.is_a?(Hash)
+        ovalue.merge_if!(nvalue)
+      else
+        ! has_key?(key) || ovalue.nil? ? nvalue : ovalue
       end
     end
   end
