@@ -80,10 +80,9 @@ module Gofer
     private
     def normalize_opts(opts = {})
       opts[:env] = (opts[:env] || {}).stringize
-      opts.dup.merge_if!({
-        :timeout => @timeout,
-        :capture_exit_status => @capture_exit_status
-      })
+      opts[:capture_exit_status] ||= @capture_exit_status
+      opts[:timeout] ||= @timeout
+      opts
     end
 
     [:stdout, :stderr].each do |key|

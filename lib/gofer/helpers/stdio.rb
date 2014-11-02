@@ -43,8 +43,8 @@ module Gofer
 
       private
       def normalize_opts(opts)
-        opts.merge_if!(
-          @opts
+        @opts.merge(
+          opts
         )
       end
     end
