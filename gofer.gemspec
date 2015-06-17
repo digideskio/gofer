@@ -9,7 +9,7 @@ Gem::Specification.new do |s|
   s.homepage = "https://github.com/envygeeks/gofer"
   s.summary = %q{run commands on remote servers using SSH}
   s.description = %q{Gofer provides a flexible and reliable model for performing tasks on remote server using Net::SSH}
-  s.files = %W(Rakefile Gemfile Readme.md) + Dir["lib/**/*"]
+  s.files = %W(Rakefile Gemfile LICENSE README.md) + Dir["lib/**/*"]
   s.require_paths = ["lib"]
   s.license = "MIT"
 
