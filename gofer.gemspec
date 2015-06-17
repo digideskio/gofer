@@ -1,11 +1,9 @@
-# -*- encoding: utf-8 -*-
 $:.push File.expand_path("../lib", __FILE__)
 require "gofer/version"
 
 Gem::Specification.new do |s|
   s.name = "envygeeks-gofer"
   s.version = Gofer::VERSION
-  s.platform = Gem::Platform::RUBY
   s.authors = ["Jordon Bedwell", "Michael Pearson"]
   s.email = ["jordon@envygeeks.io", "mipearson@gmail.com"]
   s.homepage = "https://github.com/envygeeks/gofer"
@@ -15,9 +13,9 @@ Gem::Specification.new do |s|
   s.require_paths = ["lib"]
   s.license = "MIT"
 
-  s.add_development_dependency("rspec", "~> 3.1")
-  s.add_development_dependency("rspec-mocks", "~> 3.1")
-  s.add_development_dependency("envygeeks-coveralls", "~> 0.2")
+  s.add_development_dependency("rspec", "~> 3.3")
+  s.add_development_dependency("rspec-mocks", "~> 3.3")
+  s.add_development_dependency("envygeeks-coveralls", "~> 1.0")
   s.add_dependency("net-ssh", "~> 2.9")
   s.add_dependency("net-scp", "~> 1.2")
 end
