@@ -1,9 +1,9 @@
 # Gofer!
 
-[![Code Climate](https://codeclimate.com/github/envygeeks/gofer.png)](https://codeclimate.com/github/envygeeks/gofer)
-[![Dependency Status](https://gemnasium.com/envygeeks/gofer.png)](https://gemnasium.com/envygeeks/gofer)
-[![Build Status](https://travis-ci.org/envygeeks/gofer.svg?branch=master)](https://travis-ci.org/envygeeks/gofer)
-[![Coverage Status](https://img.shields.io/coveralls/envygeeks/gofer.svg)](https://coveralls.io/r/envygeeks/gofer)
+[![Code Climate](https://codeclimate.com/github/envygeeks/ruby-gofer.png)](https://codeclimate.com/github/envygeeks/ruby-gofer)
+[![Dependency Status](https://gemnasium.com/envygeeks/ruby-gofer.png)](https://gemnasium.com/envygeeks/ruby-gofer)
+[![Build Status](https://travis-ci.org/envygeeks/ruby-gofer.svg?branch=master)](https://travis-ci.org/envygeeks/ruby-gofer)
+[![Coverage Status](https://img.shields.io/coveralls/envygeeks/ruby-gofer.svg)](https://coveralls.io/r/envygeeks/ruby-gofer)
 
 ## What is Gofer?
 
