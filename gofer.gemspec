@@ -16,6 +16,6 @@ Gem::Specification.new do |s|
   s.add_development_dependency("rspec", "~> 3.3")
   s.add_development_dependency("rspec-mocks", "~> 3.3")
   s.add_development_dependency("envygeeks-coveralls", "~> 1.0")
-  s.add_dependency("net-ssh", "~> 2.9")
+  s.add_dependency("net-ssh", "~> 3.0")
   s.add_dependency("net-scp", "~> 1.2")
 end
