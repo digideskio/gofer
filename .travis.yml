@@ -1,14 +1,19 @@
+cache: bundler
+sudo: false
 before_install:
- - ssh-keygen -P '' -f ~/.ssh/id_rsa
- - sudo apt-get install --no-install-recommends --yes openssh-server
- - cat ~/.ssh/id_rsa.pub |tee -a ~/.ssh/authorized_keys
+- ssh-keygen -P '' -f ~/.ssh/id_rsa
+- cat ~/.ssh/id_rsa.pub | tee -a ~/.ssh/authorized_keys
+addons:
+  apt:
+    packages:
+    - openssh-server
 rvm:
-  - 2.0
-  - 2.1
-  - 2.2
+- 2.0
+- 2.1
+- 2.2
 notifications:
   recipients:
-    - jordon@envygeeks.io
+  - jordon@envygeeks.io
 branches:
   only:
-    - master
+  - master
